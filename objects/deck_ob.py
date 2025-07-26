@@ -106,7 +106,7 @@ class GameRoomUI:
 
         self.stat_width = 144
         self.stat_height = 144
-        self.padding = 12 # Spacing between elements
+        self.padding = 12
 
         # Player stats positioning
         self.health_x = self.padding
@@ -120,7 +120,7 @@ class GameRoomUI:
 
         # Enemy stat placeholder dimensions
         self.enemy_stat_size = 120
-        self.enemy_stat_padding = 10 # Padding between enemy stats
+        self.enemy_stat_padding = 2 
 
         # Calculate enemy stat positions (relative to the drawn card)
         # Position them slightly above the bottom of the drawn card, centered horizontally
@@ -214,3 +214,24 @@ class GameRoomUI:
         defense_text_surface = self.stat_font.render(f"DEF: {hero_instance.defense}", True, self.WHITE)
         defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
         screen.blit(defense_text_surface, defense_text_rect)
+
+    def get_deck_rect(self):
+        return self.deck_rect
+
+    def get_health_rect(self):
+        return self.health_rect
+
+    def get_attack_rect(self):
+        return self.attack_rect
+    
+    def get_defense_rect(self):
+        return self.defense_rect
+
+    def get_enemy_health_rect(self):
+        return self.enemy_health_rect
+
+    def get_enemy_attack_rect(self):
+        return self.enemy_attack_rect
+    
+    def get_enemy_defense_rect(self):
+        return self.enemy_defense_rect
