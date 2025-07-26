@@ -1,7 +1,8 @@
+# deck_ob.py
 import pygame
 import random
 
-# --- Hero and Card Classes (as before) ---
+# --- Hero and Card Classes ---
 class Hero:
     """Represents the player's hero character and their stats."""
     def __init__(self):
@@ -16,7 +17,7 @@ class Hero:
 class Card:
     """Represents a single card in the game deck."""
     def __init__(self, theme, card_type, health=0, attack=0, defense=0, cost=0, xp_gain=0, inventory_boost=0, name=""):
-        self.name = name if name else card_type.replace('_', ' ').title() # Default name if not provided
+        self.name = name if name else card_type.replace('_', ' ').title()
         self.theme = theme
         self.card_type = card_type # "enemy", "equipment", "level_up", "dungeon_exit"
         self.health = health # For enemy HP, or equipment/level_up heal amount
@@ -25,6 +26,12 @@ class Card:
         self.cost = cost # XP cost for equipment/level_up
         self.xp_gain = xp_gain # XP gained from defeating enemy or selling equipment
         self.inventory_boost = inventory_boost # For backpack equipment
+
+        # New: Current health for enemies (will be initialized from 'health' for enemy cards)
+        self.current_health = health
+        # New: Current defense for enemies (will be initialized from 'defense' for enemy cards)
+        self.current_defense = defense
+
 
 def setup_new_game():
     """Initializes a new game session, including hero, main deck, and unlocked card pool.
@@ -54,15 +61,17 @@ def setup_new_game():
         ("Starter", "level_up", 0, 0, 0, 40, 0, 0, "Critical Strike") # Special Ability
     ]
 
+    # Convert starter card data to Card objects
     main_deck_list = [Card(*data) for data in starter_cards_data]
+
+    # Shuffle the existing starter cards BEFORE inserting the dungeon exit
+    random.shuffle(main_deck_list)
 
     # Add the dungeon exit card in the middle section (half way +/- 3 cards)
     dungeon_exit_card = Card("Dungeon", "dungeon_exit", name="Dungeon Exit")
     exit_position = len(main_deck_list) // 2 + random.randint(-3, 3) # Roughly middle +/- 3
     exit_position = max(0, min(exit_position, len(main_deck_list))) # Ensure valid index
     main_deck_list.insert(exit_position, dungeon_exit_card)
-
-    random.shuffle(main_deck_list) # Shuffle the deck
 
     # Placeholder for the other 80 cards
     unlocked_cards_pool_list = [Card("Placeholder", "placeholder") for _ in range(80)]
@@ -84,6 +93,7 @@ class GameRoomUI:
         self.NEON_BLUE = (0, 255, 255)
         self.NEON_YELLOW = (255, 255, 0)
         self.NEON_CYAN = (0, 255, 255) # Same as NEON_BLUE but used to differentiate placeholder
+        self.RED = (255, 0, 0) # For enemy health
 
         # Fonts for game room UI
         self.stat_font = pygame.font.SysFont("Arial Black", 30)
@@ -98,6 +108,7 @@ class GameRoomUI:
         self.stat_height = 144
         self.padding = 12 # Spacing between elements
 
+        # Player stats positioning
         self.health_x = self.padding
         self.attack_x = self.padding + self.stat_width + self.padding
         self.defense_x = self.padding + self.stat_width + self.padding + self.stat_width + self.padding
@@ -106,6 +117,28 @@ class GameRoomUI:
         self.health_rect = pygame.Rect(self.health_x, self.stat_y, self.stat_width, self.stat_height)
         self.attack_rect = pygame.Rect(self.attack_x, self.stat_y, self.stat_width, self.stat_height)
         self.defense_rect = pygame.Rect(self.defense_x, self.stat_y, self.stat_width, self.stat_height)
+
+        # Enemy stat placeholder dimensions
+        self.enemy_stat_size = 120
+        self.enemy_stat_padding = 10 # Padding between enemy stats
+
+        # Calculate enemy stat positions (relative to the drawn card)
+        # Position them slightly above the bottom of the drawn card, centered horizontally
+        self.enemy_stat_y = self.deck_y + self.deck_rect.height - self.enemy_stat_size - self.padding
+        
+        # Calculate x positions for enemy stats to be evenly distributed within the card width
+        # (drawn_card_x + padding) for left, (drawn_card_x + card_width - padding - enemy_stat_size) for right
+        # Or, center all three within the card, with padding in between
+        total_enemy_stat_width = (self.enemy_stat_size * 3) + (self.enemy_stat_padding * 2)
+        start_x_for_enemy_stats = self.deck_x + (self.deck_rect.width - total_enemy_stat_width) // 2
+
+        self.enemy_health_x = start_x_for_enemy_stats
+        self.enemy_attack_x = start_x_for_enemy_stats + self.enemy_stat_size + self.enemy_stat_padding
+        self.enemy_defense_x = start_x_for_enemy_stats + (self.enemy_stat_size + self.enemy_stat_padding) * 2
+
+        self.enemy_health_rect = pygame.Rect(self.enemy_health_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+        self.enemy_attack_rect = pygame.Rect(self.enemy_attack_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+        self.enemy_defense_rect = pygame.Rect(self.enemy_defense_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
 
 
     def draw_game_room(self, screen, hero_instance, deck_drawn_card):
@@ -121,18 +154,47 @@ class GameRoomUI:
             drawn_card_y = self.deck_y
             drawn_card_rect = pygame.Rect(drawn_card_x, drawn_card_y, 360, 480)
             pygame.draw.rect(screen, self.NEON_CYAN, drawn_card_rect) # Drawn card is NEON_CYAN
-            
+
             # Text on drawn card placeholder
-            card_text_surface = self.card_text_font.render(
-                f"This is a card: {deck_drawn_card.name}", True, self.BLACK
+            card_name_surface = self.card_text_font.render(
+                f"{deck_drawn_card.name}", True, self.BLACK
             )
-            card_info_surface = self.card_text_font.render(
-                "No info has been added yet", True, self.BLACK
+            card_name_rect = card_name_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 50)) # Name near top
+            screen.blit(card_name_surface, card_name_rect)
+
+            card_type_surface = self.card_text_font.render(
+                f"Type: {deck_drawn_card.card_type.replace('_', ' ').title()}", True, self.BLACK
             )
-            card_text_rect = card_text_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 - 20))
-            card_info_rect = card_info_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 + 20))
-            screen.blit(card_text_surface, card_text_rect)
-            screen.blit(card_info_surface, card_info_rect)
+            card_type_rect = card_type_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 80)) # Type below name
+            screen.blit(card_type_surface, card_type_rect)
+
+
+            # --- Draw Enemy Stat Placeholders if the drawn card is an "enemy" ---
+            if deck_drawn_card.card_type == "enemy":
+                # Enemy Health Placeholder
+                pygame.draw.rect(screen, self.RED, self.enemy_health_rect, 3) # Outline
+                enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
+                enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(enemy_health_text_surface, enemy_health_text_rect)
+
+                # Enemy Attack Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
+                enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
+
+                # Enemy Defense Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
+                enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
+                enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
+
+            else: # For non-enemy cards, display generic card info
+                card_info_surface = self.card_text_font.render(
+                    "No info has been added yet", True, self.BLACK
+                )
+                card_info_rect = card_info_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 + 20))
+                screen.blit(card_info_surface, card_info_rect)
 
         # --- Draw Hero Stat Placeholders ---
         # Health Placeholder
@@ -152,4 +214,3 @@ class GameRoomUI:
         defense_text_surface = self.stat_font.render(f"DEF: {hero_instance.defense}", True, self.WHITE)
         defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
         screen.blit(defense_text_surface, defense_text_rect)
-
