@@ -1,7 +1,7 @@
 import pygame
 import random
 
-# --- Game Logic Classes ---
+# --- Hero and Card Classes (as before) ---
 class Hero:
     """Represents the player's hero character and their stats."""
     def __init__(self):
@@ -33,7 +33,6 @@ def setup_new_game():
     hero_instance = Hero() # Initialize hero stats
 
     # Placeholder for 21 starter cards (list of Card objects)
-    # This will be replaced with actual card definitions later
     starter_cards_data = [
         # Enemies: (theme, type, hp, atk, def, cost, xp_gain, inv_boost, name)
         ("Starter", "enemy", 1, 1, 0, 0, 10, 0, "Rat"), ("Starter", "enemy", 1, 1, 0, 0, 10, 0, "Rat"),
@@ -66,8 +65,91 @@ def setup_new_game():
     random.shuffle(main_deck_list) # Shuffle the deck
 
     # Placeholder for the other 80 cards
-    # This will be populated with actual cards from other themed sets later
     unlocked_cards_pool_list = [Card("Placeholder", "placeholder") for _ in range(80)]
 
     return hero_instance, main_deck_list, unlocked_cards_pool_list
+
+
+# --- Game Room UI Class ---
+class GameRoomUI:
+    """Manages the drawing of elements within the GAME_ROOM state."""
+    def __init__(self, screen_width, screen_height):
+        self.WIDTH = screen_width
+        self.HEIGHT = screen_height
+
+        # Define colors (can also be passed or imported if needed from a constants file)
+        self.GRAY = (50, 50, 50)
+        self.WHITE = (255, 255, 255)
+        self.BLACK = (0, 0, 0)
+        self.NEON_BLUE = (0, 255, 255)
+        self.NEON_YELLOW = (255, 255, 0)
+        self.NEON_CYAN = (0, 255, 255) # Same as NEON_BLUE but used to differentiate placeholder
+
+        # Fonts for game room UI
+        self.stat_font = pygame.font.SysFont("Arial Black", 30)
+        self.card_text_font = pygame.font.SysFont("Arial", 25)
+
+        # Pre-calculate positions for static elements
+        self.deck_x = (self.WIDTH - 360) // 2
+        self.deck_y = 40 # 40px from top
+        self.deck_rect = pygame.Rect(self.deck_x, self.deck_y, 360, 480)
+
+        self.stat_width = 144
+        self.stat_height = 144
+        self.padding = 12 # Spacing between elements
+
+        self.health_x = self.padding
+        self.attack_x = self.padding + self.stat_width + self.padding
+        self.defense_x = self.padding + self.stat_width + self.padding + self.stat_width + self.padding
+        self.stat_y = self.HEIGHT - self.stat_height - self.padding # 10px from bottom
+
+        self.health_rect = pygame.Rect(self.health_x, self.stat_y, self.stat_width, self.stat_height)
+        self.attack_rect = pygame.Rect(self.attack_x, self.stat_y, self.stat_width, self.stat_height)
+        self.defense_rect = pygame.Rect(self.defense_x, self.stat_y, self.stat_width, self.stat_height)
+
+
+    def draw_game_room(self, screen, hero_instance, deck_drawn_card):
+        """Draws all game room elements to the screen."""
+        screen.fill(self.GRAY) # A distinct color for the game room
+
+        # --- Draw Deck Placeholder ---
+        pygame.draw.rect(screen, self.NEON_BLUE, self.deck_rect, 5) # Draw outline for visibility
+
+        # --- Draw Drawn Card Placeholder (if a card is drawn) ---
+        if deck_drawn_card:
+            drawn_card_x = self.deck_x # Same position as deck for now
+            drawn_card_y = self.deck_y
+            drawn_card_rect = pygame.Rect(drawn_card_x, drawn_card_y, 360, 480)
+            pygame.draw.rect(screen, self.NEON_CYAN, drawn_card_rect) # Drawn card is NEON_CYAN
+            
+            # Text on drawn card placeholder
+            card_text_surface = self.card_text_font.render(
+                f"This is a card: {deck_drawn_card.name}", True, self.BLACK
+            )
+            card_info_surface = self.card_text_font.render(
+                "No info has been added yet", True, self.BLACK
+            )
+            card_text_rect = card_text_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 - 20))
+            card_info_rect = card_info_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 + 20))
+            screen.blit(card_text_surface, card_text_rect)
+            screen.blit(card_info_surface, card_info_rect)
+
+        # --- Draw Hero Stat Placeholders ---
+        # Health Placeholder
+        pygame.draw.rect(screen, self.NEON_YELLOW, self.health_rect, 5) # Outline
+        health_text_surface = self.stat_font.render(f"HP: {hero_instance.health}", True, self.WHITE)
+        health_text_rect = health_text_surface.get_rect(center=self.health_rect.center)
+        screen.blit(health_text_surface, health_text_rect)
+
+        # Attack Placeholder
+        pygame.draw.rect(screen, self.NEON_YELLOW, self.attack_rect, 5) # Outline
+        attack_text_surface = self.stat_font.render(f"ATK: {hero_instance.attack}", True, self.WHITE)
+        attack_text_rect = attack_text_surface.get_rect(center=self.attack_rect.center)
+        screen.blit(attack_text_surface, attack_text_rect)
+
+        # Defense Placeholder
+        pygame.draw.rect(screen, self.NEON_YELLOW, self.defense_rect, 5) # Outline
+        defense_text_surface = self.stat_font.render(f"DEF: {hero_instance.defense}", True, self.WHITE)
+        defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
+        screen.blit(defense_text_surface, defense_text_rect)
 
