@@ -3,7 +3,8 @@ import sys
 import math
 import time
 import random
-from objects.deck_ob import Hero, Card, setup_new_game, GameRoomUI
+# Temp test - Delete this later: -commented code- from objects.deck_ob import Hero, Card, setup_new_game, GameRoomUI
+from objects.deck_ob import Hero, Card, setup_new_game # Corrected: GameRoomUI is now defined in main.py
 from objects.battle_ob import BattleManager # Import the new BattleManager
 
 # --- Game Constants ---
@@ -17,6 +18,11 @@ GRAY = (50, 50, 50)
 LIGHT_GRAY = (150, 150, 150)
 GREEN = (11, 102, 35)
 NEON_PINK = (255, 0, 255)
+# Adding other colors that were defined in your original GameRoomUI
+NEON_BLUE = (0, 255, 255)
+NEON_YELLOW = (255, 255, 0)
+NEON_CYAN = (0, 255, 255)
+RED = (255, 0, 0)
 
 # --- Game States ---
 GAME_STATE_TITLE = "TITLE_SCREEN"
@@ -68,7 +74,6 @@ animation_duration = 1000
 initial_delay_end_time = tap_to_start_start_time + 2000
 
 # --- Game State Variables ---
-# THESE LINES WERE LIKELY MISSING OR MISPLACED!
 current_game_state = GAME_STATE_TITLE
 current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
 
@@ -78,6 +83,168 @@ main_deck = []
 unlocked_cards_pool = []
 shuffling_start_time = 0
 deck_drawn_card = None  # Holds the currently drawn card for display
+game_session_seed = None # New: Variable to store the game seed
+
+
+# --- Game Room UI Class (Your Original Version) ---
+class GameRoomUI:
+    """Manages the drawing of elements within the GAME_ROOM state."""
+    def __init__(self, screen_width, screen_height):
+        self.WIDTH = screen_width
+        self.HEIGHT = screen_height
+
+        # Define colors (can also be passed or imported if needed from a constants file)
+        self.GRAY = (50, 50, 50)
+        self.WHITE = (255, 255, 255)
+        self.BLACK = (0, 0, 0)
+        self.NEON_BLUE = (0, 255, 255)
+        self.NEON_YELLOW = (255, 255, 0)
+        self.NEON_CYAN = (0, 255, 255) # Same as NEON_BLUE but used to differentiate placeholder
+        self.RED = (255, 0, 0) # For enemy health
+
+        # Fonts for game room UI
+        self.stat_font = pygame.font.SysFont("Arial Black", 30)
+        self.card_text_font = pygame.font.SysFont("Arial", 25)
+
+        # Pre-calculate positions for static elements
+        self.deck_x = (self.WIDTH - 360) // 2
+        self.deck_y = 40 # 40px from top
+        self.deck_rect = pygame.Rect(self.deck_x, self.deck_y, 360, 480)
+
+        self.stat_width = 144
+        self.stat_height = 144
+        self.padding = 12
+
+        # Player stats positioning
+        self.health_x = self.padding
+        self.attack_x = self.padding + self.stat_width + self.padding
+        self.defense_x = self.padding + self.stat_width + self.padding + self.stat_width + self.padding
+        self.stat_y = self.HEIGHT - self.stat_height - self.padding # 10px from bottom
+
+        self.health_rect = pygame.Rect(self.health_x, self.stat_y, self.stat_width, self.stat_height)
+        self.attack_rect = pygame.Rect(self.attack_x, self.stat_y, self.stat_width, self.stat_height)
+        self.defense_rect = pygame.Rect(self.defense_x, self.stat_y, self.stat_width, self.stat_height)
+
+        # Enemy stat placeholder dimensions
+        self.enemy_stat_size = 120
+        self.enemy_stat_padding = 2 
+
+        # Calculate enemy stat positions (relative to the drawn card)
+        # Position them slightly above the bottom of the drawn card, centered horizontally
+        self.enemy_stat_y = self.deck_y + self.deck_rect.height - self.enemy_stat_size - self.padding
+        
+        # Calculate x positions for enemy stats to be evenly distributed within the card width
+        # (drawn_card_x + padding) for left, (drawn_card_x + card_width - padding - enemy_stat_size) for right
+        # Or, center all three within the card, with padding in between
+        total_enemy_stat_width = (self.enemy_stat_size * 3) + (self.enemy_stat_padding * 2)
+        start_x_for_enemy_stats = self.deck_x + (self.deck_rect.width - total_enemy_stat_width) // 2
+
+        self.enemy_health_x = start_x_for_enemy_stats
+        self.enemy_attack_x = start_x_for_enemy_stats + self.enemy_stat_size + self.enemy_stat_padding
+        self.enemy_defense_x = start_x_for_enemy_stats + (self.enemy_stat_size + self.enemy_stat_padding) * 2
+
+        self.enemy_health_rect = pygame.Rect(self.enemy_health_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+        self.enemy_attack_rect = pygame.Rect(self.enemy_attack_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+        self.enemy_defense_rect = pygame.Rect(self.enemy_defense_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+
+
+    def draw_game_room(self, screen, hero_instance, deck_drawn_card): # Removed shake_offsets here
+        """Draws all game room elements to the screen."""
+        screen.fill(self.GRAY) # A distinct color for the game room
+
+        # --- Draw Deck Placeholder ---
+        # No shake applied here directly, will be handled by main loop moving the rect
+        pygame.draw.rect(screen, self.NEON_BLUE, self.deck_rect, 5) # Draw outline for visibility
+
+        # --- Draw Drawn Card Placeholder (if a card is drawn) ---
+        if deck_drawn_card:
+            drawn_card_x = self.deck_x # Same position as deck for now
+            drawn_card_y = self.deck_y
+            drawn_card_rect = pygame.Rect(drawn_card_x, drawn_card_y, 360, 480)
+            pygame.draw.rect(screen, self.NEON_CYAN, drawn_card_rect) # Drawn card is NEON_CYAN
+
+            # Text on drawn card placeholder
+            card_name_surface = self.card_text_font.render(
+                f"{deck_drawn_card.name}", True, self.BLACK
+            )
+            card_name_rect = card_name_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 50)) # Name near top
+            screen.blit(card_name_surface, card_name_rect)
+
+            card_type_surface = self.card_text_font.render(
+                f"Type: {deck_drawn_card.card_type.replace('_', ' ').title()}", True, self.BLACK
+            )
+            card_type_rect = card_type_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 80)) # Type below name
+            screen.blit(card_type_surface, card_type_rect)
+
+
+            # --- Draw Enemy Stat Placeholders if the drawn card is an "enemy" ---
+            if deck_drawn_card.card_type == "enemy":
+                # Enemy Health Placeholder
+                pygame.draw.rect(screen, self.RED, self.enemy_health_rect, 3) # Outline
+                enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
+                enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(enemy_health_text_surface, enemy_health_text_rect)
+
+                # Enemy Attack Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
+                enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
+
+                # Enemy Defense Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
+                enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
+                enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
+
+            else: # For non-enemy cards, display generic card info
+                card_info_surface = self.card_text_font.render(
+                    "No info has been added yet", True, self.BLACK
+                )
+                card_info_rect = card_info_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 + 20))
+                screen.blit(card_info_surface, card_info_rect)
+
+        # --- Draw Hero Stat Placeholders ---
+        # No shake applied here directly, will be handled by main loop moving the rect
+        # Health Placeholder
+        pygame.draw.rect(screen, self.NEON_YELLOW, self.health_rect, 5) # Outline
+        health_text_surface = self.stat_font.render(f"HP: {hero_instance.health}", True, self.WHITE)
+        health_text_rect = health_text_surface.get_rect(center=self.health_rect.center)
+        screen.blit(health_text_surface, health_text_rect)
+
+        # Attack Placeholder
+        pygame.draw.rect(screen, self.NEON_YELLOW, self.attack_rect, 5) # Outline
+        attack_text_surface = self.stat_font.render(f"ATK: {hero_instance.attack}", True, self.WHITE)
+        attack_text_rect = attack_text_surface.get_rect(center=self.attack_rect.center)
+        screen.blit(attack_text_surface, attack_text_rect)
+
+        # Defense Placeholder
+        pygame.draw.rect(screen, self.NEON_YELLOW, self.defense_rect, 5) # Outline
+        defense_text_surface = self.stat_font.render(f"DEF: {hero_instance.defense}", True, self.WHITE)
+        defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
+        screen.blit(defense_text_surface, defense_text_rect)
+
+    def get_deck_rect(self):
+        return self.deck_rect
+
+    def get_health_rect(self):
+        return self.health_rect
+
+    def get_attack_rect(self):
+        return self.attack_rect
+    
+    def get_defense_rect(self):
+        return self.defense_rect
+
+    def get_enemy_health_rect(self):
+        return self.enemy_health_rect
+
+    def get_enemy_attack_rect(self):
+        return self.enemy_attack_rect
+    
+    def get_enemy_defense_rect(self):
+        return self.enemy_defense_rect
+
 
 # --- Game Room UI Instance ---
 game_room_ui = GameRoomUI(WIDTH, HEIGHT) # Instantiate the UI renderer
@@ -95,7 +262,8 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if current_game_state == GAME_STATE_TITLE and pygame.time.get_ticks() > initial_delay_end_time:
                 current_game_state = GAME_STATE_SHUFFLING # Transition to shuffling state
-                hero, main_deck, unlocked_cards_pool = setup_new_game()
+                # CORRECTED LINE: Now unpacking 4 values from setup_new_game()
+                hero, main_deck, unlocked_cards_pool, game_session_seed = setup_new_game() 
                 shuffling_start_time = pygame.time.get_ticks() # Start timer for shuffling animation
                 current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
             elif current_game_state == GAME_STATE_GAME_ROOM:
@@ -128,13 +296,15 @@ while running:
                     if not battle_manager.combat_text_active: # Only allow click if animation finished
                         current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Back to idle to draw next card
                         deck_drawn_card = None # Clear the defeated enemy card
+                        hero.experience += battle_manager.current_enemy.xp_gain # Gain XP from defeated enemy
+                        print(f"Gained {battle_manager.current_enemy.xp_gain} XP. Total XP: {hero.experience}")
                         battle_manager.current_enemy = None # Clear current enemy in BattleManager
                         print("Combat ended. Ready to draw next card.")
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_COMBAT_END_DEFEAT:
                     # After "Defeat!" fades, any tap leads to game over/title screen
                     if not battle_manager.combat_text_active: # Only allow click if animation finished
-                        print("Game Over. Returning to title screen.")
+                        print(f"Game Over. Returning to title screen. This Game's Seed was: {game_session_seed}") # Modified line
                         current_game_state = GAME_STATE_TITLE
                         hero = None # Reset hero
                         main_deck = [] # Clear deck
@@ -243,17 +413,12 @@ while running:
         # Apply shake offsets to copies of the UI rects before drawing GameRoomUI
         # This approach ensures GameRoomUI itself doesn't need to know about shaking,
         # and BattleManager doesn't directly manipulate GameRoomUI's internal rects.
-        shaken_deck_rect = game_room_ui.get_deck_rect().move(shake_offsets['deck_rect'])
-        shaken_health_rect = game_room_ui.get_health_rect().move(shake_offsets['health_rect'])
-
-        # Temporarily override rects in game_room_ui for drawing with shake
-        # NOTE: This is fine for simple rects, but for complex UI objects,
-        # a more robust method might involve GameRoomUI accepting offsets as params.
         original_deck_rect_ui = game_room_ui.deck_rect
         original_health_rect_ui = game_room_ui.health_rect
 
-        game_room_ui.deck_rect = shaken_deck_rect
-        game_room_ui.health_rect = shaken_health_rect
+        # Temporarily update the UI instance's rects for drawing
+        game_room_ui.deck_rect = original_deck_rect_ui.move(shake_offsets['deck_rect'])
+        game_room_ui.health_rect = original_health_rect_ui.move(shake_offsets['health_rect'])
 
         # Pass the current_enemy from battle_manager to draw_game_room
         # This ensures the enemy stats are drawn correctly on the card.
@@ -261,7 +426,7 @@ while running:
         # current_enemy is set inside battle_manager.start_combat().
         game_room_ui.draw_game_room(screen, hero, battle_manager.current_enemy if battle_manager.current_enemy else deck_drawn_card)
 
-        # Restore original rects after drawing to avoid permanent offset
+        # Restore original rects after drawing to avoid permanent offset for next frame's logic
         game_room_ui.deck_rect = original_deck_rect_ui
         game_room_ui.health_rect = original_health_rect_ui
 
@@ -285,5 +450,11 @@ while running:
     clock.tick(FPS)
 
 # --- Pygame Quit ---
+# This print will now only happen if the game is actually quit via the window close button
+# or other direct exit, *not* when returning to the title screen from defeat.
+# The 'game over' print now includes the seed.
+# if game_session_seed is not None:
+#     print(f"This Game's Seed was: {game_session_seed}")
+
 pygame.quit()
 sys.exit()

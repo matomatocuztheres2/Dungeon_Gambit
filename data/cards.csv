@@ -1,0 +1,52 @@
+Theme,Type,Name,Health,Attack,Defense,XP,Inventory,Quantity
+Cave,Enemy,Rat,1,1,0,10,0,4
+Cave,Enemy,Goblin,2,1,0,20,0,4
+Cave,Enemy,Ogre,5,1,1,50,0,2
+Cave,Equipment,Sword,0,2,0,10,0,1
+Cave,Equipment,Shield,0,0,2,10,0,1
+Cave,Equipment,Breastplate,0,0,3,10,0,1
+Cave,Equipment,Healing Salve,3,0,0,10,0,1
+Cave,Equipment,Belt,0,0,0,10,1,1
+Cave,Level up,Iron Skin,5,0,1,40,0,2
+Cave,Level up,Rage,5,1,0,40XP,0,3
+Crypt,Enemy,Bat,1,1,0,10,0,4
+Crypt,Enemy,Skeleon,2,1,0,20,0,4
+Crypt,Enemy,Necromancer,5,1,1,50,0,2
+Crypt,Equipment,Wand,0,1,0,10,0,1
+Crypt,Equipment,Wind Wall,0,0,3,10,0,1
+Crypt,Equipment,Barrier,0,0,3,10,0,1
+Crypt,Equipment,Healing Spell,3,0,0,10,0,1
+Crypt,Equipment,Backpack,0,0,0,10,1,1
+Crypt,Level up,Mana Shield,5,0,1,0,0,2
+Crypt,Level up,Fire Blast,5,1,0,0,0,3
+Hideout,Enemy,Wolf,1,1,0,10,0,4
+Hideout,Enemy,Bandit,2,1,0,20,0,4
+Hideout,Enemy,Assassin,5,1,1,50,0,2
+Hideout,Equipment,Dagger,0,2,0,10,0,1
+Hideout,Equipment,Rapier,0,2,0,10,0,1
+Hideout,Equipment,Cuirass,0,0,3,10,0,1
+Hideout,Equipment,Health Potion,3,0,0,10,0,1
+Hideout,Equipment,Satchel,0,0,0,10,1,1
+Hideout,Level up,Dodge,5,0,1,0,0,2
+Hideout,Level up,Backstab,5,1,0,0,0,3
+Forest,Enemy,Snake,1,1,0,10,0,4
+Forest,Enemy,Bogart,2,1,0,20,0,4
+Forest,Enemy,Troll,5,1,1,50,0,2
+Forest,Equipment,Boar Form,0,1,0,10,0,1
+Forest,Equipment,Wolf Form,0,1,1,10,0,1
+Forest,Equipment,Bear Form,0,2,2,10,0,1
+Forest,Equipment,Herbs,3,0,0,10,0,1
+Forest,Equipment,Pouch,0,0,0,10,1,1
+Forest,Level up,Faeries,5,0,1,0,0,2
+Forest,Level up,Thorns,5,1,0,0,0,3
+Graveyard,Enemy,Ghost,1,1,0,10,0,4
+Graveyard,Enemy,Banshee,2,1,0,20,0,4
+Graveyard,Enemy,Hag,5,1,1,50,0,2
+Graveyard,Equipment,Bow,0,3,0,10,0,1
+Graveyard,Equipment,Crossbow,0,3,0,10,0,1
+Graveyard,Equipment,Cloak,0,0,1,10,0,1
+Graveyard,Equipment,Healing Scroll,3,0,0,10,0,1
+Graveyard,Equipment,Quiver,0,0,0,10,1,1
+Graveyard,Level up,Stealth,5,0,1,0,0,2
+Graveyard,Level up,Traps,5,1,0,0,0,3
+General,Dungeon Exit,0,0,0,0,0,1 

@@ -1,6 +1,8 @@
 # deck_ob.py
 import pygame
 import random
+import csv # Import the csv module
+import time # Import time for seed generation
 
 # --- Hero and Card Classes ---
 class Hero:
@@ -32,206 +34,150 @@ class Card:
         # New: Current defense for enemies (will be initialized from 'defense' for enemy cards)
         self.current_defense = defense
 
+# --- Internal Helper Function to Load Raw Card Data from CSV ---
+def _load_raw_card_data_from_csv(file_path):
+    """
+    Loads raw card data from a CSV file into a list of tuples,
+    matching the (theme, type, hp, atk, def, cost, xp_gain, inv_boost, name) format.
+    Handles 'Quantity' to duplicate entries and cleans/converts data types.
+    """
+    raw_card_data = [] # This will conceptually replace your starter_cards_data
+    
+    print(f"Attempting to load CSV from: {file_path}") # Added debug print
+    
+    try:
+        with open(file_path, mode='r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            # Print header to ensure it's read correctly
+            print(f"CSV Headers: {reader.fieldnames}") 
+            
+            row_count = 0 # Added for debugging
+            for row in reader:
+                row_count += 1
+                
+                # IMPORTANT: Check if the row itself is None or an empty dictionary
+                if row is None or not row:
+                    print(f"Warning: Skipping empty or malformed row {row_count}. Content: {row}")
+                    continue # Skip to the next row
+                    
+                try:
+                    # Use .get() with a default empty string to prevent NoneType errors
+                    # Also, strip whitespace immediately after getting the value
+                    theme = row.get('Theme', '').strip()
+                    card_type = row.get('Type', '').strip().lower()
+                    name = row.get('Name', '').strip()
+
+                    # Convert numeric fields, handling empty or '-' values as 0
+                    health = int(row.get('Health', '0').strip().replace('-', '0'))
+                    attack = int(row.get('Attack', '0').strip().replace('-', '0'))
+                    defense = int(row.get('Defense', '0').strip().replace('-', '0'))
+                    
+                    # 'Cost' column is not in your CSV, so default to 0
+                    cost = 0 
+                    
+                    # Handle 'XP' suffix and potential '-' values
+                    xp_str = row.get('XP', '0').strip().replace('XP', '').replace('-', '0')
+                    xp_gain = int(xp_str)
+                    
+                    inventory_boost = int(row.get('Inventory', '0').strip().replace('-', '0'))
+                    quantity = int(row.get('Quantity', '1').strip()) # Default to 1 if not specified
+
+                    # Add the card data tuple 'quantity' times
+                    # Only add if theme, card_type, and name are not empty after stripping
+                    if theme and card_type and name:
+                        for _ in range(quantity):
+                            raw_card_data.append((theme, card_type, health, attack, defense, cost, xp_gain, inventory_boost, name))
+                    else:
+                        print(f"Warning: Skipping row {row_count} due to empty Theme, Type, or Name (after stripping): {row}")
+                
+                except ValueError as e:
+                    print(f"Warning: Could not parse numeric value for row {row_count}: {row}. Error: {e}. Skipping this card entry.")
+                except KeyError as e:
+                    print(f"Warning: Missing expected column '{e}' in row {row_count}: {row}. Please check CSV headers. Skipping this card entry.")
+                except Exception as e: # Catch any other unexpected errors during row processing
+                    print(f"An unexpected error occurred while processing row {row_count}: {row}. Error: {e}. Skipping this card entry.")
+                    
+    except FileNotFoundError:
+        print(f"Error: CSV file not found at {file_path}. No cards loaded.")
+        return []
+    except Exception as e:
+        print(f"An unexpected error occurred while opening/reading CSV: {e}. No cards loaded.")
+        return []
+
+    print(f"Successfully loaded {len(raw_card_data)} raw card entries from CSV.") # Added debug print
+    return raw_card_data
+
 
 def setup_new_game():
     """Initializes a new game session, including hero, main deck, and unlocked card pool.
-    Returns: Tuple (Hero object, main_deck list, unlocked_cards_pool list)
+    Returns: Tuple (Hero object, main_deck list, unlocked_cards_pool list, game_seed)
     """
+    # Generate a new seed based on current time
+    game_seed = int(time.time() * 1000) # Using milliseconds for better granularity
+    random.seed(game_seed) # Set the seed for random operations
+    print(f"New game started with seed: {game_seed}") # Added debug print
+
     hero_instance = Hero() # Initialize hero stats
 
-    # Placeholder for 21 starter cards (list of Card objects)
-    starter_cards_data = [
-        # Enemies: (theme, type, hp, atk, def, cost, xp_gain, inv_boost, name)
-        ("Starter", "enemy", 1, 1, 0, 0, 10, 0, "Rat"), ("Starter", "enemy", 1, 1, 0, 0, 10, 0, "Rat"),
-        ("Starter", "enemy", 1, 1, 0, 0, 10, 0, "Rat"), ("Starter", "enemy", 1, 1, 0, 0, 10, 0, "Rat"),
-        ("Starter", "enemy", 2, 1, 0, 0, 20, 0, "Goblin"), ("Starter", "enemy", 2, 1, 0, 0, 20, 0, "Goblin"),
-        ("Starter", "enemy", 2, 1, 0, 0, 20, 0, "Goblin"), ("Starter", "enemy", 2, 1, 0, 0, 20, 0, "Goblin"),
-        ("Starter", "enemy", 5, 1, 0, 0, 50, 0, "Orc"), ("Starter", "enemy", 5, 1, 0, 0, 50, 0, "Orc"),
-        # Equipment: (theme, type, hp, atk, def, cost, xp_gain, inv_boost, name)
-        ("Starter", "equipment", 0, 1, 0, 0, 10, 0, "Rusty Sword"), # Attack+1
-        ("Starter", "equipment", 0, 0, 2, 0, 10, 0, "Worn Shield"), # Defense+2 (Temp HP)
-        ("Starter", "equipment", 0, 0, 0, 0, 10, 1, "Backpack"), # Inventory slot +1
-        ("Starter", "equipment", 0, 0, 1, 0, 10, 0, "Leather Vest"), # Defense+1
-        ("Starter", "equipment", 0, 0, 0, 0, 10, 0, "Healing Potion"), # Instant heal 3HP (example)
-        # Level Up: (theme, type, hp, atk, def, cost, xp_gain, inv_boost, name)
-        ("Starter", "level_up", 0, 0, 0, 40, 0, 0, "Heal Spell"), # Resets HP to Max
-        ("Starter", "level_up", 5, 0, 0, 40, 0, 0, "HP Boost"), # Increases Max HP by 5
-        ("Starter", "level_up", 0, 1, 0, 40, 0, 0, "Strength Training"), # Increases Attack by 1
-        ("Starter", "level_up", 0, 0, 1, 40, 0, 0, "Fortitude Training"), # Increases Defense by 1
-        ("Starter", "level_up", 0, 0, 0, 40, 0, 0, "Critical Strike") # Special Ability
-    ]
+    # --- CSV File Path ---
+    # IMPORTANT: Adjust this path if your 'cards.csv' is in a different location
+    csv_file_path = "/home/mat_dev/boot.dev/projects/github.com/matomatocuztheres2/delver_project/data/cards.csv"
 
-    # Convert starter card data to Card objects
-    main_deck_list = [Card(*data) for data in starter_cards_data]
+    # Load all raw card data from CSV into the desired tuple format
+    all_raw_card_data = _load_raw_card_data_from_csv(csv_file_path)
 
-    # Shuffle the existing starter cards BEFORE inserting the dungeon exit
-    random.shuffle(main_deck_list)
+    # Print the requested prompt with the total number of cards loaded
+    print(f"The deck currently contains {len(all_raw_card_data)} amount of cards based on the CSV data.")
 
-    # Add the dungeon exit card in the middle section (half way +/- 3 cards)
-    dungeon_exit_card = Card("Dungeon", "dungeon_exit", name="Dungeon Exit")
-    exit_position = len(main_deck_list) // 2 + random.randint(-3, 3) # Roughly middle +/- 3
-    exit_position = max(0, min(exit_position, len(main_deck_list))) # Ensure valid index
-    main_deck_list.insert(exit_position, dungeon_exit_card)
+    main_deck_list = []
+    dungeon_exit_card = None
 
-    # Placeholder for the other 80 cards
-    unlocked_cards_pool_list = [Card("Placeholder", "placeholder") for _ in range(80)]
-
-    return hero_instance, main_deck_list, unlocked_cards_pool_list
-
-
-# --- Game Room UI Class ---
-class GameRoomUI:
-    """Manages the drawing of elements within the GAME_ROOM state."""
-    def __init__(self, screen_width, screen_height):
-        self.WIDTH = screen_width
-        self.HEIGHT = screen_height
-
-        # Define colors (can also be passed or imported if needed from a constants file)
-        self.GRAY = (50, 50, 50)
-        self.WHITE = (255, 255, 255)
-        self.BLACK = (0, 0, 0)
-        self.NEON_BLUE = (0, 255, 255)
-        self.NEON_YELLOW = (255, 255, 0)
-        self.NEON_CYAN = (0, 255, 255) # Same as NEON_BLUE but used to differentiate placeholder
-        self.RED = (255, 0, 0) # For enemy health
-
-        # Fonts for game room UI
-        self.stat_font = pygame.font.SysFont("Arial Black", 30)
-        self.card_text_font = pygame.font.SysFont("Arial", 25)
-
-        # Pre-calculate positions for static elements
-        self.deck_x = (self.WIDTH - 360) // 2
-        self.deck_y = 40 # 40px from top
-        self.deck_rect = pygame.Rect(self.deck_x, self.deck_y, 360, 480)
-
-        self.stat_width = 144
-        self.stat_height = 144
-        self.padding = 12
-
-        # Player stats positioning
-        self.health_x = self.padding
-        self.attack_x = self.padding + self.stat_width + self.padding
-        self.defense_x = self.padding + self.stat_width + self.padding + self.stat_width + self.padding
-        self.stat_y = self.HEIGHT - self.stat_height - self.padding # 10px from bottom
-
-        self.health_rect = pygame.Rect(self.health_x, self.stat_y, self.stat_width, self.stat_height)
-        self.attack_rect = pygame.Rect(self.attack_x, self.stat_y, self.stat_width, self.stat_height)
-        self.defense_rect = pygame.Rect(self.defense_x, self.stat_y, self.stat_width, self.stat_height)
-
-        # Enemy stat placeholder dimensions
-        self.enemy_stat_size = 120
-        self.enemy_stat_padding = 2 
-
-        # Calculate enemy stat positions (relative to the drawn card)
-        # Position them slightly above the bottom of the drawn card, centered horizontally
-        self.enemy_stat_y = self.deck_y + self.deck_rect.height - self.enemy_stat_size - self.padding
+    # Separate Dungeon Exit and other cards from the raw data
+    cards_for_theming = []
+    for card_tuple in all_raw_card_data:
+        # card_type is at index 1 in the tuple
+        if len(card_tuple) > 1 and card_tuple[1] == 'dungeon exit':
+            dungeon_exit_card = Card(*card_tuple)
+        else:
+            cards_for_theming.append(card_tuple)
+    
+    print(f"Found {len(cards_for_theming)} non-Dungeon Exit cards for theme selection.") # Added debug print
+    
+    # --- Theme Selection and Deck Generation ---
+    # Theme is at index 0 in the tuple, ensure card_tuple has at least one element
+    themes = list(set(card[0] for card in cards_for_theming if len(card) > 0))
+    
+    if themes:
+        selected_theme = random.choice(themes)
+        print(f"Randomly selected dungeon theme: {selected_theme}")
         
-        # Calculate x positions for enemy stats to be evenly distributed within the card width
-        # (drawn_card_x + padding) for left, (drawn_card_x + card_width - padding - enemy_stat_size) for right
-        # Or, center all three within the card, with padding in between
-        total_enemy_stat_width = (self.enemy_stat_size * 3) + (self.enemy_stat_padding * 2)
-        start_x_for_enemy_stats = self.deck_x + (self.deck_rect.width - total_enemy_stat_width) // 2
+        # Populate the main_deck_list with Card objects for the selected theme
+        for card_tuple in cards_for_theming:
+            # Ensure card_tuple has at least one element for indexing
+            if len(card_tuple) > 0 and card_tuple[0] == selected_theme: # Theme is at index 0
+                main_deck_list.append(Card(*card_tuple))
+        print(f"Main deck populated with {len(main_deck_list)} cards for theme '{selected_theme}'.") # Added debug print
+    else:
+        print("No themes found to select from, or no non-Dungeon Exit cards available in CSV.")
+        # If no cards are loaded, main_deck_list will remain empty
 
-        self.enemy_health_x = start_x_for_enemy_stats
-        self.enemy_attack_x = start_x_for_enemy_stats + self.enemy_stat_size + self.enemy_stat_padding
-        self.enemy_defense_x = start_x_for_enemy_stats + (self.enemy_stat_size + self.enemy_stat_padding) * 2
+    # Shuffle the main deck BEFORE inserting the dungeon exit
+    if main_deck_list:
+        random.shuffle(main_deck_list)
+        print(f"Main deck shuffled. Current size: {len(main_deck_list)}") # Added debug print
 
-        self.enemy_health_rect = pygame.Rect(self.enemy_health_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
-        self.enemy_attack_rect = pygame.Rect(self.enemy_attack_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
-        self.enemy_defense_rect = pygame.Rect(self.enemy_defense_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+        # Add the dungeon exit card (if it was found in the CSV)
+        if dungeon_exit_card:
+            exit_position = len(main_deck_list) // 2 + random.randint(-3, 3) # Roughly middle +/- 3
+            exit_position = max(0, min(exit_position, len(main_deck_list))) # Ensure valid index
+            main_deck_list.insert(exit_position, dungeon_exit_card)
+            print(f"Dungeon Exit card inserted at position {exit_position}. New deck size: {len(main_deck_list)}") # Added debug print
+        else:
+            print("Warning: Dungeon Exit card not found in CSV or could not be created. Game might not have an exit.")
+    else:
+        print("Main deck is empty after theme selection and card generation.")
 
+    # The unlocked_cards_pool remains empty as per your original code's placeholder
+    unlocked_cards_pool_list = []
 
-    def draw_game_room(self, screen, hero_instance, deck_drawn_card):
-        """Draws all game room elements to the screen."""
-        screen.fill(self.GRAY) # A distinct color for the game room
-
-        # --- Draw Deck Placeholder ---
-        pygame.draw.rect(screen, self.NEON_BLUE, self.deck_rect, 5) # Draw outline for visibility
-
-        # --- Draw Drawn Card Placeholder (if a card is drawn) ---
-        if deck_drawn_card:
-            drawn_card_x = self.deck_x # Same position as deck for now
-            drawn_card_y = self.deck_y
-            drawn_card_rect = pygame.Rect(drawn_card_x, drawn_card_y, 360, 480)
-            pygame.draw.rect(screen, self.NEON_CYAN, drawn_card_rect) # Drawn card is NEON_CYAN
-
-            # Text on drawn card placeholder
-            card_name_surface = self.card_text_font.render(
-                f"{deck_drawn_card.name}", True, self.BLACK
-            )
-            card_name_rect = card_name_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 50)) # Name near top
-            screen.blit(card_name_surface, card_name_rect)
-
-            card_type_surface = self.card_text_font.render(
-                f"Type: {deck_drawn_card.card_type.replace('_', ' ').title()}", True, self.BLACK
-            )
-            card_type_rect = card_type_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 80)) # Type below name
-            screen.blit(card_type_surface, card_type_rect)
-
-
-            # --- Draw Enemy Stat Placeholders if the drawn card is an "enemy" ---
-            if deck_drawn_card.card_type == "enemy":
-                # Enemy Health Placeholder
-                pygame.draw.rect(screen, self.RED, self.enemy_health_rect, 3) # Outline
-                enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
-                enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
-                screen.blit(enemy_health_text_surface, enemy_health_text_rect)
-
-                # Enemy Attack Placeholder
-                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
-                enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
-                enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
-                screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
-
-                # Enemy Defense Placeholder
-                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
-                enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
-                enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
-                screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
-
-            else: # For non-enemy cards, display generic card info
-                card_info_surface = self.card_text_font.render(
-                    "No info has been added yet", True, self.BLACK
-                )
-                card_info_rect = card_info_surface.get_rect(center=(drawn_card_x + 360 // 2, drawn_card_y + 480 // 2 + 20))
-                screen.blit(card_info_surface, card_info_rect)
-
-        # --- Draw Hero Stat Placeholders ---
-        # Health Placeholder
-        pygame.draw.rect(screen, self.NEON_YELLOW, self.health_rect, 5) # Outline
-        health_text_surface = self.stat_font.render(f"HP: {hero_instance.health}", True, self.WHITE)
-        health_text_rect = health_text_surface.get_rect(center=self.health_rect.center)
-        screen.blit(health_text_surface, health_text_rect)
-
-        # Attack Placeholder
-        pygame.draw.rect(screen, self.NEON_YELLOW, self.attack_rect, 5) # Outline
-        attack_text_surface = self.stat_font.render(f"ATK: {hero_instance.attack}", True, self.WHITE)
-        attack_text_rect = attack_text_surface.get_rect(center=self.attack_rect.center)
-        screen.blit(attack_text_surface, attack_text_rect)
-
-        # Defense Placeholder
-        pygame.draw.rect(screen, self.NEON_YELLOW, self.defense_rect, 5) # Outline
-        defense_text_surface = self.stat_font.render(f"DEF: {hero_instance.defense}", True, self.WHITE)
-        defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
-        screen.blit(defense_text_surface, defense_text_rect)
-
-    def get_deck_rect(self):
-        return self.deck_rect
-
-    def get_health_rect(self):
-        return self.health_rect
-
-    def get_attack_rect(self):
-        return self.attack_rect
-    
-    def get_defense_rect(self):
-        return self.defense_rect
-
-    def get_enemy_health_rect(self):
-        return self.enemy_health_rect
-
-    def get_enemy_attack_rect(self):
-        return self.enemy_attack_rect
-    
-    def get_enemy_defense_rect(self):
-        return self.enemy_defense_rect
+    return hero_instance, main_deck_list, unlocked_cards_pool_list, game_seed # Return the seed
