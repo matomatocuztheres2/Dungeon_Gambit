@@ -49,4 +49,4 @@ Graveyard,Equipment,Healing Scroll,3,0,0,10,0,1
 Graveyard,Equipment,Quiver,0,0,0,10,1,1
 Graveyard,Level up,Stealth,5,0,1,0,0,2
 Graveyard,Level up,Traps,5,1,0,0,0,3
-General,Dungeon Exit,0,0,0,0,0,1 
+General,dungeon exit,None,0,0,0,0,0,1 
