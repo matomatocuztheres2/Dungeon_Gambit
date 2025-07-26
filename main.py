@@ -3,9 +3,10 @@ import sys
 import math
 import time
 import random
-# Temp test - Delete this later: -commented code- from objects.deck_ob import Hero, Card, setup_new_game, GameRoomUI
-from objects.deck_ob import Hero, Card, setup_new_game # Corrected: GameRoomUI is now defined in main.py
-from objects.battle_ob import BattleManager # Import the new BattleManager
+
+from objects.deck_ob import Hero, Card, setup_new_game
+from objects.battle_ob import BattleManager 
+from objects.inventory_ob import IntventoryManager
 
 # --- Game Constants ---
 WIDTH, HEIGHT = 480, 720
@@ -18,7 +19,6 @@ GRAY = (50, 50, 50)
 LIGHT_GRAY = (150, 150, 150)
 GREEN = (11, 102, 35)
 NEON_PINK = (255, 0, 255)
-# Adding other colors that were defined in your original GameRoomUI
 NEON_BLUE = (0, 255, 255)
 NEON_YELLOW = (255, 255, 0)
 NEON_CYAN = (0, 255, 255)
@@ -31,6 +31,9 @@ GAME_STATE_GAME_ROOM = "GAME_ROOM"
 
 # --- Game Room Sub-States (within GAME_STATE_GAME_ROOM) ---
 GAME_ROOM_SUB_STATE_IDLE = "IDLE"
+GAME_ROOM_SUB_STATE_EQUIPMENT_START = "EQUIPMENT_FOUND"
+GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED = "EQUIPMENT_TURN"
+GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED = "EQUIPMENT_ADDED"
 GAME_ROOM_SUB_STATE_COMBAT_START = "COMBAT_START"
 GAME_ROOM_SUB_STATE_PLAYER_TURN = "PLAYER_TURN"
 GAME_ROOM_SUB_STATE_ENEMY_TURN = "ENEMY_TURN"
@@ -93,7 +96,6 @@ class GameRoomUI:
         self.WIDTH = screen_width
         self.HEIGHT = screen_height
 
-        # Define colors (can also be passed or imported if needed from a constants file)
         self.GRAY = (50, 50, 50)
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -130,12 +132,9 @@ class GameRoomUI:
         self.enemy_stat_padding = 2 
 
         # Calculate enemy stat positions (relative to the drawn card)
-        # Position them slightly above the bottom of the drawn card, centered horizontally
         self.enemy_stat_y = self.deck_y + self.deck_rect.height - self.enemy_stat_size - self.padding
         
         # Calculate x positions for enemy stats to be evenly distributed within the card width
-        # (drawn_card_x + padding) for left, (drawn_card_x + card_width - padding - enemy_stat_size) for right
-        # Or, center all three within the card, with padding in between
         total_enemy_stat_width = (self.enemy_stat_size * 3) + (self.enemy_stat_padding * 2)
         start_x_for_enemy_stats = self.deck_x + (self.deck_rect.width - total_enemy_stat_width) // 2
 
@@ -148,12 +147,11 @@ class GameRoomUI:
         self.enemy_defense_rect = pygame.Rect(self.enemy_defense_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
 
 
-    def draw_game_room(self, screen, hero_instance, deck_drawn_card): # Removed shake_offsets here
+    def draw_game_room(self, screen, hero_instance, deck_drawn_card): 
         """Draws all game room elements to the screen."""
         screen.fill(self.GRAY) # A distinct color for the game room
 
         # --- Draw Deck Placeholder ---
-        # No shake applied here directly, will be handled by main loop moving the rect
         pygame.draw.rect(screen, self.NEON_BLUE, self.deck_rect, 5) # Draw outline for visibility
 
         # --- Draw Drawn Card Placeholder (if a card is drawn) ---
@@ -197,6 +195,25 @@ class GameRoomUI:
                 enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
                 screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
 
+            if deck_drawn_card.card_type == "equipment":
+                # Equipment Health Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_health_rect, 3) # Outline
+                enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
+                enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(enemy_health_text_surface, enemy_health_text_rect)
+
+                # Equipment Attack Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
+                enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
+
+                # Equiipment Defense Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
+                enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
+                enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
+
             else: # For non-enemy cards, display generic card info
                 card_info_surface = self.card_text_font.render(
                     "No info has been added yet", True, self.BLACK
@@ -205,7 +222,6 @@ class GameRoomUI:
                 screen.blit(card_info_surface, card_info_rect)
 
         # --- Draw Hero Stat Placeholders ---
-        # No shake applied here directly, will be handled by main loop moving the rect
         # Health Placeholder
         pygame.draw.rect(screen, self.NEON_YELLOW, self.health_rect, 5) # Outline
         health_text_surface = self.stat_font.render(f"HP: {hero_instance.health}", True, self.WHITE)
@@ -252,6 +268,9 @@ game_room_ui = GameRoomUI(WIDTH, HEIGHT) # Instantiate the UI renderer
 # --- Battle Manager Instance ---
 battle_manager = BattleManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to BattleManager
 
+# --- Inventory Manager Instance ---
+inventory_manager = IntventoryManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to BattleManager
+
 # --- Main Game Loop ---
 running = True
 while running:
@@ -262,7 +281,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if current_game_state == GAME_STATE_TITLE and pygame.time.get_ticks() > initial_delay_end_time:
                 current_game_state = GAME_STATE_SHUFFLING # Transition to shuffling state
-                # CORRECTED LINE: Now unpacking 4 values from setup_new_game()
+
                 hero, main_deck, unlocked_cards_pool, game_session_seed = setup_new_game() 
                 shuffling_start_time = pygame.time.get_ticks() # Start timer for shuffling animation
                 current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
@@ -275,13 +294,25 @@ while running:
                             print(f"Drew card: {deck_drawn_card.name}")
 
                             if deck_drawn_card.card_type == "enemy":
+                                # Added bug correction to prevent infinite combat
+                                if deck_drawn_card.defense > 0:
+                                    damage_potentail = deck_drawn_card.defense - (hero.attack - hero.min_attack) # this gives us how much defense will be destroyed
+                                    if damage_potentail == hero.min_attack:
+                                        if deck_drawn_card.attack == hero.min_defense:
+                                            deck_drawn_card.defense = hero.min_attack - 1
+                                            
                                 # Delegate combat start to BattleManager
                                 current_game_room_sub_state = battle_manager.start_combat(deck_drawn_card)
-                                # The battle manager's update_animations will eventually transition to PLAYER_TURN,
-                                # and that's where we'll set the initial timer.
-                            elif deck_drawn_card.card_type == "dungeon_exit":
-                                # Delegate dungeon exit animation to BattleManager
+                                
+                            elif deck_drawn_card.card_type == "dungeon exit":
                                 current_game_room_sub_state = battle_manager.start_dungeon_exit_animation()
+                            
+                            
+                            elif deck_drawn_card.card_type == "equipment":
+                                # Delegate inventory start to InventoryManager
+                                current_game_room_sub_state = inventory_manager.start_inventory(deck_drawn_card)
+                                pygame.time.set_timer(NEXT_TURN_EVENT, 1000)
+
                             else:
                                 # For other card types (equipment, level_up)
                                 print(f"Drew {deck_drawn_card.card_type}: {deck_drawn_card.name}")
@@ -313,6 +344,13 @@ while running:
                         battle_manager.current_enemy = None # Clear current enemy in BattleManager
                         current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
                         tap_to_start_start_time = pygame.time.get_ticks() # Reset title screen animation timer
+
+                elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
+                    # Allow click to dismiss the "Equipment Added" state and go back to IDLE
+                    print("Equipment Added. Ready to draw next card.")
+                    current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
+                    pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Stop any lingering timers for this state
+                    deck_drawn_card = None
                         
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_DUNGEON_EXIT_ANIMATION:
                     # After "You Survived!" fades, any tap leads to reward screen
@@ -334,6 +372,7 @@ while running:
         if event.type == NEXT_TURN_EVENT:
             pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Stop the timer
 
+            # --- Handle Combat TEvents ---
             if current_game_room_sub_state == GAME_ROOM_SUB_STATE_PLAYER_TURN:
                 if hero and battle_manager.current_enemy: # Ensure both exist before attacking
                     new_sub_state = battle_manager.handle_player_attack(hero)
@@ -355,6 +394,18 @@ while running:
                 else:
                     print("Error: Player or enemy missing during enemy turn.")
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Fallback to idle
+            
+            elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_START:
+                print("NEXT_TURN_EVENT triggered for EQUIPMENT_START state. Transitioning to applying buffs.")
+                # Now that the "Treasure!" animation time has passed, apply the buffs
+                current_game_room_sub_state = inventory_manager.handle_player_buff(hero) # This method should return GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED
+                # After applying buffs, set a short timer to transition to IDLE after the buff numbers animate
+                pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # 1 second for buff number animation
+
+            elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
+                print("NEXT_TURN_EVENT triggered for EQUIPMENT_ADDED state. Returning to IDLE.")
+                # Buff animation is done, go back to IDLE
+                current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
 
 
     # --- Game State Logic & Drawing ---
@@ -411,8 +462,6 @@ while running:
         shake_offsets = battle_manager.get_shaken_rects()
         
         # Apply shake offsets to copies of the UI rects before drawing GameRoomUI
-        # This approach ensures GameRoomUI itself doesn't need to know about shaking,
-        # and BattleManager doesn't directly manipulate GameRoomUI's internal rects.
         original_deck_rect_ui = game_room_ui.deck_rect
         original_health_rect_ui = game_room_ui.health_rect
 
@@ -421,9 +470,6 @@ while running:
         game_room_ui.health_rect = original_health_rect_ui.move(shake_offsets['health_rect'])
 
         # Pass the current_enemy from battle_manager to draw_game_room
-        # This ensures the enemy stats are drawn correctly on the card.
-        # Check if current_enemy exists to prevent errors if deck_drawn_card is not an enemy.
-        # current_enemy is set inside battle_manager.start_combat().
         game_room_ui.draw_game_room(screen, hero, battle_manager.current_enemy if battle_manager.current_enemy else deck_drawn_card)
 
         # Restore original rects after drawing to avoid permanent offset for next frame's logic
@@ -431,7 +477,6 @@ while running:
         game_room_ui.health_rect = original_health_rect_ui
 
         # Update and draw combat animations (text, damage numbers)
-        # The update_animations method might return a new sub-state (e.g., from COMBAT_START to PLAYER_TURN)
         new_sub_state_after_anim = battle_manager.update_animations(current_game_room_sub_state)
         
         # If the sub-state just transitioned to PLAYER_TURN after the combat start animation,
@@ -448,13 +493,6 @@ while running:
 
     # --- Cap Frame Rate ---
     clock.tick(FPS)
-
-# --- Pygame Quit ---
-# This print will now only happen if the game is actually quit via the window close button
-# or other direct exit, *not* when returning to the title screen from defeat.
-# The 'game over' print now includes the seed.
-# if game_session_seed is not None:
-#     print(f"This Game's Seed was: {game_session_seed}")
 
 pygame.quit()
 sys.exit()

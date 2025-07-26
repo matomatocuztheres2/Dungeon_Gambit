@@ -11,10 +11,12 @@ class Hero:
         self.health = 5
         self.attack = 1
         self.defense = 0 # Now functions as temporary HP
-        self.max_health = 5 # For level up benefit
         self.equipment_slots = 3
         self.current_equipment = [] # List of equipped items
         self.experience = 0
+        self.max_health = 5 # For level up tracking
+        self.min_attack = 1 # For equipment and level up tracking
+        self.min_defense = 0 # For equipment and level up tracking
 
 class Card:
     """Represents a single card in the game deck."""
@@ -27,12 +29,13 @@ class Card:
         self.defense = defense # For enemy defense, or equipment defense boost (temp HP)
         self.cost = cost # XP cost for equipment/level_up
         self.xp_gain = xp_gain # XP gained from defeating enemy or selling equipment
-        self.inventory_boost = inventory_boost # For backpack equipment
+        self.inventory_boost = inventory_boost # For bag equipment
 
         # New: Current health for enemies (will be initialized from 'health' for enemy cards)
         self.current_health = health
         # New: Current defense for enemies (will be initialized from 'defense' for enemy cards)
         self.current_defense = defense
+
 
 # --- Internal Helper Function to Load Raw Card Data from CSV ---
 def _load_raw_card_data_from_csv(file_path):

@@ -125,6 +125,12 @@ class BattleManager:
         damage_dealt = hero_instance.attack
         
         effective_damage_to_enemy = max(0, damage_dealt - self.current_enemy.current_defense)
+        if hero_instance.attack > hero_instance.min_attack:
+            if self.current_enemy.current_defense > 0:
+                self.current_enemy.current_defense = self.current_enemy.current_defense - 1
+
+            print(f"Attack of {hero_instance.attack} dropping by 1")
+            hero_instance.attack = hero_instance.attack - 1
         self.current_enemy.current_health -= effective_damage_to_enemy
         self._display_damage_text(effective_damage_to_enemy, self.RED, self.game_room_ui.get_enemy_health_rect().center) # Show damage on enemy
 
@@ -152,6 +158,9 @@ class BattleManager:
 
         print("Enemy attacks!")
         damage_taken = max(0, self.current_enemy.attack - hero_instance.defense) # Defense reduces damage
+        if hero_instance.defense > hero_instance.min_defense:
+            print(f"Defense of {hero_instance.defense} dropping by 1")
+            hero_instance.defense = hero_instance.defense - 1
         hero_instance.health -= damage_taken
         self._display_damage_text(damage_taken, self.RED, self.game_room_ui.get_health_rect().center) # Show damage on player
         
@@ -256,16 +265,7 @@ class BattleManager:
                 text_rect = text_surface.get_rect(center=(text_info['pos'][0], text_info['pos'][1] - float_offset_y))
                 screen.blit(text_surface, text_rect)
 
-        # Apply shake offset to relevant UI elements for drawing
-        # NOTE: This only works if GameRoomUI.draw_game_room is called *after* this
-        # Or, we make sure that BattleManager draws the affected elements itself.
-        # For now, GameRoomUI still draws, and we'll apply the offset directly *in main.py* before calling draw_game_room.
-        # However, to avoid passing state back and forth, BattleManager should provide the offset.
-        
-        # Let's provide the offset as properties that main.py can use
-        # This function (draw_combat_elements) should only draw things BattleManager *owns* (text, numbers).
-        # The shaking of existing UI elements should be handled where those elements are drawn or by modifying their rects before drawing.
-
+    # Apply shake offset to relevant UI elements for drawing
     def get_shaken_rects(self):
         """
         Returns a dictionary of current shake offsets for relevant rects.
