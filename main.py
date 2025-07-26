@@ -2,11 +2,8 @@ import pygame
 import sys
 import math
 import time
-<<<<<<< HEAD
-=======
 import random 
-from objects.deck_ob import Hero, Card, setup_new_game
->>>>>>> gameplay_loop
+from objects.deck_ob import Hero, Card, setup_new_game # Import the new module for Hero, Card, and setup_new_game
 
 # --- Game Constants ---
 WIDTH, HEIGHT = 480, 720
@@ -17,13 +14,6 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (50, 50, 50)
 LIGHT_GRAY = (150, 150, 150)
-<<<<<<< HEAD
-GREEN = (11, 102, 35)
-
-
-# --- Game States ---
-GAME_STATE_TITLE = "TITLE_SCREEN"
-=======
 GREEN = (11, 102, 35) # Defined by user
 NEON_PINK = (255, 0, 255)
 NEON_BLUE = (0, 255, 255)
@@ -33,7 +23,6 @@ NEON_CYAN = (0, 255, 255)
 # --- Game States ---
 GAME_STATE_TITLE = "TITLE_SCREEN"
 GAME_STATE_SHUFFLING = "SHUFFLING_SCREEN" # New state for shuffling animation
->>>>>>> gameplay_loop
 GAME_STATE_GAME_ROOM = "GAME_ROOM"
 
 # --- Pygame Initialization ---
@@ -46,27 +35,6 @@ clock = pygame.time.Clock()
 current_game_state = GAME_STATE_TITLE
 
 # --- Title Screen Elements ---
-<<<<<<< HEAD
-
-title_font = None
-tap_to_start_font = None
-
-try:
-    title_font = pygame.font.SysFont("Times New Roman", 80, bold=True) # Adding bold
-    tap_to_start_font = pygame.font.SysFont("Arial Black", 30, bold=False) # Keep this smaller
-    print(f"Using font: Times New Roman")
-    
-except Exception:
-    pass
-
-if title_font is None:
-    # Fallback to default Pygame font if none of the preferred fonts are found
-    print("Warning: None of the preferred fonts found. Using default Pygame font.")
-    title_font = pygame.font.Font(None, 80, bold=True)
-    tap_to_start_font = pygame.font.Font(None, 30, bold=False)
-
-
-=======
 title_font = None
 tap_to_start_font = None
 
@@ -80,7 +48,6 @@ except Exception:
     title_font = pygame.font.Font(None, 80, bold=True)
     tap_to_start_font = pygame.font.Font(None, 30, bold=False)
 
->>>>>>> gameplay_loop
 # Render the title text (split into two lines)
 title_line1_surface = title_font.render("Dungeon's", True, WHITE)
 title_line2_surface = title_font.render("Gambit", True, WHITE)
@@ -97,8 +64,6 @@ tap_to_start_start_time = pygame.time.get_ticks()
 animation_duration = 1000
 initial_delay_end_time = tap_to_start_start_time + 2000
 
-<<<<<<< HEAD
-=======
 # --- Game Variables for Game Room ---
 hero = None
 main_deck = []
@@ -107,7 +72,6 @@ shuffling_start_time = 0
 deck_drawn_card = None # Holds the currently drawn card for display
 
 
->>>>>>> gameplay_loop
 # --- Main Game Loop ---
 running = True
 while running:
@@ -117,13 +81,6 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if current_game_state == GAME_STATE_TITLE and pygame.time.get_ticks() > initial_delay_end_time:
-<<<<<<< HEAD
-                current_game_state = GAME_STATE_GAME_ROOM
-
-    # --- Game State Logic & Drawing ---
-    if current_game_state == GAME_STATE_TITLE:
-        screen.fill(GREEN)
-=======
                 current_game_state = GAME_STATE_SHUFFLING # Transition to shuffling state
                 # Initialize game components by calling the function from deck_ob
                 hero, main_deck, unlocked_cards_pool = setup_new_game() 
@@ -144,7 +101,6 @@ while running:
     # --- Game State Logic & Drawing ---
     if current_game_state == GAME_STATE_TITLE:
         screen.fill(GREEN) # Using GREEN for title screen background as specified by user
->>>>>>> gameplay_loop
         screen.blit(title_line1_surface, title_line1_rect)
         screen.blit(title_line2_surface, title_line2_rect)
 
@@ -173,18 +129,6 @@ while running:
         
         screen.blit(tap_to_start_scaled_surface, tap_to_start_rect)
 
-<<<<<<< HEAD
-    elif current_game_state == GAME_STATE_GAME_ROOM:
-        screen.fill(GRAY)
-        game_room_font = pygame.font.SysFont("Arial", 50)
-        game_room_text_surface = game_room_font.render("Game Room (Placeholder)", True, WHITE)
-        game_room_text_rect = game_room_text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-        screen.blit(game_room_text_surface, game_room_text_rect)
-
-    pygame.display.flip()
-    clock.tick(FPS)
-
-=======
     elif current_game_state == GAME_STATE_SHUFFLING:
         screen.fill(BLACK) # Clear screen for shuffling
         
@@ -275,6 +219,5 @@ while running:
     clock.tick(FPS)
 
 # --- Pygame Quit ---
->>>>>>> gameplay_loop
 pygame.quit()
 sys.exit()
