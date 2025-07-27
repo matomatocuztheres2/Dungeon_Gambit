@@ -67,11 +67,11 @@ try:
     SOUND_EFFECTS['card_draw'] = pygame.mixer.Sound('./sounds/card_draw_so.mp3')
     SOUND_EFFECTS['card_draw'].set_volume(0.3) # Adjust volume if needed, 0.0 to 1.0
 
-    SOUND_EFFECTS['hit_or_trap'] = pygame.mixer.Sound('./sounds/trap_so.wav')
-    SOUND_EFFECTS['hit_or_trap'].set_volume(0.5) # Adjust volume if needed
+    SOUND_EFFECTS['hit'] = pygame.mixer.Sound('./sounds/trap_so.wav')
+    SOUND_EFFECTS['hit'].set_volume(0.5) # Adjust volume if needed
 
-    SOUND_EFFECTS['tap_card'] = pygame.mixer.Sound('./sounds/tap_so.mp3')
-    SOUND_EFFECTS['tap_card'].set_volume(0.4) # Adjust volume if needed
+    SOUND_EFFECTS['tap'] = pygame.mixer.Sound('./sounds/tap_so.mp3')
+    SOUND_EFFECTS['tap'].set_volume(0.4) # Adjust volume if needed
 
     print("Sound effects loaded successfully.")
 except pygame.error as e:
@@ -90,6 +90,20 @@ try:
 except pygame.error as e:
     print(f"Error loading or playing music: {e}")
     print(f"Please ensure '{BACKGROUND_MUSIC_PATH}' exists and is a valid audio file.")
+
+# --- Load Sprites ---
+BACKGROUND_SPRITE_PATH = './sprites/background.png'
+
+# --- NEW: Load Background Sprite ---
+BACKGROUND_SPRITE = None # Initialize as None
+try:
+    BACKGROUND_SPRITE = pygame.image.load(BACKGROUND_SPRITE_PATH).convert()
+    # .convert() is usually faster for non-transparent backgrounds.
+    # Use .convert_alpha() if your background has transparent parts.
+    print(f"Background sprite '{BACKGROUND_SPRITE_PATH}' loaded successfully.")
+except pygame.error as e:
+    print(f"Error loading background sprite: {e}")
+    print(f"Please ensure '{BACKGROUND_SPRITE_PATH}' exists and is a valid image file.")
 
 # --- Title Screen Elements ---
 title_font = None
@@ -206,6 +220,9 @@ class GameRoomUI:
     def draw_game_room(self, screen, hero_instance, deck_drawn_card): 
         """Draws all game room elements to the screen."""
         screen.fill(self.GRAY) # A distinct color for the game room
+        #Draw background to screen
+        if BACKGROUND_SPRITE: # Always check if the sprite was loaded successfully
+            screen.blit(BACKGROUND_SPRITE, (0, 0))
 
         # --- Draw Deck Placeholder ---
         pygame.draw.rect(screen, self.NEON_BLUE, self.deck_rect, 5) # Draw outline for visibility
@@ -423,7 +440,6 @@ while running:
                         if main_deck:
                             deck_drawn_card = main_deck.pop(0)
                             print(f"Drew card: {deck_drawn_card.name}")
-                            SOUND_EFFECTS['card_draw'].play()
 
                             if deck_drawn_card.card_type == "enemy":
                                 # Added bug correction to prevent infinite combat
@@ -434,6 +450,7 @@ while running:
                                             deck_drawn_card.defense = hero.min_attack - 1
 
                                 current_game_room_sub_state = battle_manager.start_combat(deck_drawn_card)
+                                SOUND_EFFECTS['hit'].play()
                                 
                             elif deck_drawn_card.card_type == "dungeon exit":
                                 current_game_room_sub_state = battle_manager.start_dungeon_exit_animation()
@@ -441,10 +458,12 @@ while running:
                             
                             elif deck_drawn_card.card_type == "equipment":
                                 current_game_room_sub_state = inventory_manager.start_inventory(deck_drawn_card)
+                                SOUND_EFFECTS['tap'].play()
                                 pygame.time.set_timer(NEXT_TURN_EVENT, 2000)
 
                             elif deck_drawn_card.card_type == "level up": 
                                 current_game_room_sub_state = level_manager.start_level_up(deck_drawn_card)
+                                SOUND_EFFECTS['tap'].play()
                                 pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Short timer to allow "Level Up!" pop-up to show
 
                             else:
@@ -461,6 +480,7 @@ while running:
                         hero.experience += battle_manager.current_enemy.xp_gain # Gain XP from defeated enemy
                         print(f"Gained {battle_manager.current_enemy.xp_gain} XP. Total XP: {hero.experience}")
                         battle_manager.current_enemy = None # Clear current enemy in BattleManager
+                        SOUND_EFFECTS['card_draw'].play()
                         print("Combat ended. Ready to draw next card.")
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_COMBAT_END_DEFEAT:
@@ -473,6 +493,7 @@ while running:
                         deck_drawn_card = None
                         battle_manager.current_enemy = None # Clear current enemy in BattleManager
                         current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
+                        SOUND_EFFECTS['card_draw'].play()
                         tap_to_start_start_time = pygame.time.get_ticks() # Reset title screen animation timer
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_START: # This is the state where "Treasure!" has animated
@@ -488,11 +509,13 @@ while running:
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
                     print("Equipment Added. Ready to draw next card.")
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
+                    SOUND_EFFECTS['card_draw'].play()
                     pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Stop any lingering timers for this state
                     deck_drawn_card = None
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_ADDED: # --- NEW ---
                     print("NEXT_TURN_EVENT triggered for LEVEL_UP_ADDED state. Transitioning to IDLE.")
+                    SOUND_EFFECTS['card_draw'].play()
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
                     pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Turn off timer
                         
@@ -508,6 +531,7 @@ while running:
                     deck_drawn_card = None
                     battle_manager.current_enemy = None # Clear current enemy in BattleManager
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
+                    SOUND_EFFECTS['card_draw'].play()
                     tap_to_start_start_time = pygame.time.get_ticks() # Reset title screen animation timer
                 
 
@@ -561,6 +585,9 @@ while running:
     # --- Game State Logic & Drawing ---
     if current_game_state == GAME_STATE_TITLE:
         screen.fill(GREEN)
+        #Draw bacxkground
+        if BACKGROUND_SPRITE: # Always check if the sprite was loaded successfully
+            screen.blit(BACKGROUND_SPRITE, (0, 0))
         screen.blit(title_line1_surface, title_line1_rect)
         screen.blit(title_line2_surface, title_line2_rect)
 
@@ -591,6 +618,9 @@ while running:
 
     elif current_game_state == GAME_STATE_SHUFFLING:
         screen.fill(BLACK) # Clear screen for shuffling
+        #Draw Background
+        if BACKGROUND_SPRITE: # Always check if the sprite was loaded successfully
+            screen.blit(BACKGROUND_SPRITE, (0, 0))
 
         # Draw shuffling placeholder
         placeholder_size = 200
