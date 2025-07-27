@@ -53,8 +53,20 @@ class IntventoryManager:
             print("Error: No equipment to add.")
             return "IDLE" # Should not happen in equipment state
         
-        #Temp Test: Delete later
-        print("Begin Buff Add - Collecting player data")
+        #Check for full inventory
+        if self.current_equipment.card_type == "equipment" and self.current_equipment.inventory_boost == 0 and self.current_equipment.current_health == 0: # Avoids bags and potions
+            if len(hero_instance.current_equipment) < hero_instance.equipment_slots:
+                hero_instance.current_equipment.append(self.current_equipment) 
+                print(f"Added {self.current_equipment.name} to inventory. Inventory size: {len(hero_instance.current_equipment)}/{hero_instance.equipment_slots}")
+            else:
+                hero_instance.experience += self.current_equipment.xp_gain
+                print(f"All equipment spots are full. This was sold for {self.current_equipment.xp_gain}. Total XP: {hero_instance.experience}")
+
+                
+        elif self.current_equipment.card_type == "equipment" and self.current_equipment.inventory_boost == 1: #Bags are always added
+            hero_instance.current_equipment.append(self.current_equipment)
+            print(f"Added {self.current_equipment.name} to inventory. Inventory size: {len(hero_instance.current_equipment)}/{hero_instance.equipment_slots}")
+
 
         hero_health = hero_instance.health
         hero_attack = hero_instance.attack
@@ -62,12 +74,6 @@ class IntventoryManager:
         hero_inventory = hero_instance.equipment_slots
         hero_xp = hero_instance.experience
 
-        #Temp Test: Delete later
-        print("--Hero stats pulled--")
-        print(f"Hero inventory: {hero_inventory}")
-
-        #Temp Test: Delete later
-        print("Begin Buff Add - Updating player data")
 
         effective_heal_from_equipment = self.current_equipment.current_health
         effective_attack_from_equipment = self.current_equipment.attack

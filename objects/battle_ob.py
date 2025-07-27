@@ -38,6 +38,32 @@ class BattleManager:
         self.current_enemy = None # The actual enemy Card object
         self.current_game_room_sub_state = "IDLE" # Managed externally, but useful for internal logic
 
+    def _find_oldest_degradable_armor(self, hero_instance):
+        """
+        Finds the index of the oldest equipped item that contributes defense
+        and is not primarily an attack weapon. Assumes FIFO order.
+        """
+        for i, item_card in enumerate(hero_instance.current_equipment):
+            # Define what constitutes "degradable armor" for your game
+            # Example: card_type is "equipment", it provides defense, and no attack.
+            # Adjust these conditions as needed for your specific item types.
+            if item_card.card_type == "equipment" and item_card.defense > 0 and item_card.attack == 0:
+                return i # Return the index of the oldest found
+        return -1 # No suitable armor found
+    
+    def _find_oldest_degradable_weapon(self, hero_instance):
+        """
+        Finds the index of the oldest equipped item that contributes attack
+        and is not primarily a defense item. Assumes FIFO order.
+        """
+        for i, item_card in enumerate(hero_instance.current_equipment):
+            # Define what constitutes a "degradable weapon" for your game
+            # Example: card_type is "equipment", it provides attack, and no defense.
+            # Adjust these conditions as needed for your specific item types.
+            if item_card.card_type == "equipment" and item_card.attack > 0 and item_card.defense == 0:
+                return i # Return the index of the oldest found
+        return -1 # No suitable weapon found
+
     def _shake_rect_offset(self, rect, current_time):
         """
         Calculates a shaking offset for a rect based on time if shaking is active for this rect.
@@ -158,9 +184,35 @@ class BattleManager:
 
         print("Enemy attacks!")
         damage_taken = max(0, self.current_enemy.attack - hero_instance.defense) # Defense reduces damage
+        
+        # First, apply the per-hit degradation to the hero's overall defense stat
         if hero_instance.defense > hero_instance.min_defense:
             print(f"Defense of {hero_instance.defense} dropping by 1")
-            hero_instance.defense = hero_instance.defense - 1
+            # Reduce hero's aggregate defense by 1 for this hit, but not below min_defense
+            hero_instance.defense = max(hero_instance.min_defense, hero_instance.defense - 1)
+            print(f"Hero's defense degraded to {hero_instance.defense}.")
+
+            # Now, check if this degradation means an equipment piece should break and be removed.
+            # This triggers if the hero's aggregate defense has dropped to their base 'fist' defense.
+            if hero_instance.defense <= hero_instance.min_defense:
+                print("Hero's defense reached minimum. Checking for armor to break...")
+                
+                # Find the oldest armor piece in the inventory that can break
+                armor_to_remove_index = self._find_oldest_degradable_armor(hero_instance)
+
+                if armor_to_remove_index != -1:
+                    removed_card = hero_instance.current_equipment.pop(armor_to_remove_index)
+                    
+                    # Revert the stats that this specific broken card *originally provided*
+                    # This ensures the hero's total defense accurately reflects remaining items.
+                    hero_instance.defense -= removed_card.defense 
+                    hero_instance.defense = max(hero_instance.defense, hero_instance.min_defense) # Ensure defense doesn't go below actual min
+
+                    print(f"Armor piece '{removed_card.name}' broke! Removed from inventory.")
+                    print(f"Hero's new current Defense: {hero_instance.defense}")
+                else:
+                    print("No degradable armor found to remove, despite defense hitting threshold.")
+
         hero_instance.health -= damage_taken
         self._display_damage_text(damage_taken, self.RED, self.game_room_ui.get_health_rect().center) # Show damage on player
         

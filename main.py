@@ -103,6 +103,8 @@ class GameRoomUI:
         self.NEON_YELLOW = (255, 255, 0)
         self.NEON_CYAN = (0, 255, 255) # Same as NEON_BLUE but used to differentiate placeholder
         self.RED = (255, 0, 0) # For enemy health
+        self.GREEN = (0, 200, 0) # Added for inventory items (from previous suggestion)
+        self.DARK_GRAY = (30, 30, 30) # Added for empty inventory slots (from previous suggestion)
 
         # Fonts for game room UI
         self.stat_font = pygame.font.SysFont("Arial Black", 30)
@@ -145,6 +147,15 @@ class GameRoomUI:
         self.enemy_health_rect = pygame.Rect(self.enemy_health_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
         self.enemy_attack_rect = pygame.Rect(self.enemy_attack_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
         self.enemy_defense_rect = pygame.Rect(self.enemy_defense_x, self.enemy_stat_y, self.enemy_stat_size, self.enemy_stat_size)
+
+        #--- Inventory Icon management ---
+        self.icon_size = 60
+        self.icon_padding = 2 # Padding between icons
+
+        # Calculate starting X for the inventory icons
+        # Top-left of the first icon:
+        self.inventory_start_x = self.padding # Start from left edge, with padding
+        self.inventory_start_y = self.deck_y # Align with the top of the deck
 
 
     def draw_game_room(self, screen, hero_instance, deck_drawn_card): 
@@ -195,26 +206,27 @@ class GameRoomUI:
                 enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
                 screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
 
-            if deck_drawn_card.card_type == "equipment":
-                # Equipment Health Placeholder
+            if deck_drawn_card.card_type == "equipment": # This branch also needs its stats displayed correctly
+                # Equipment Health Placeholder (for its 'charges' or 'durability' if applicable)
                 pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_health_rect, 3) # Outline
-                enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
-                enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
-                screen.blit(enemy_health_text_surface, enemy_health_text_rect)
+                # Using 'health' as a general stat for equipment, e.g., durability
+                equipment_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.health}", True, self.WHITE) 
+                equipment_health_text_rect = equipment_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(equipment_health_text_surface, equipment_health_text_rect)
 
                 # Equipment Attack Placeholder
                 pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
-                enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
-                enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
-                screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
+                equipment_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                equipment_attack_text_rect = equipment_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(equipment_attack_text_surface, equipment_attack_text_rect)
 
-                # Equiipment Defense Placeholder
+                # Equipment Defense Placeholder
                 pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
-                enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
-                enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
-                screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
+                equipment_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.defense}", True, self.WHITE)
+                equipment_defense_text_rect = equipment_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(equipment_defense_text_surface, equipment_defense_text_rect)
 
-            else: # For non-enemy cards, display generic card info
+            else: # For non-enemy/non-equipment cards, display generic card info (e.g., Level Up, Dungeon Exit)
                 card_info_surface = self.card_text_font.render(
                     "No info has been added yet", True, self.BLACK
                 )
@@ -239,6 +251,49 @@ class GameRoomUI:
         defense_text_surface = self.stat_font.render(f"DEF: {hero_instance.defense}", True, self.WHITE)
         defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
         screen.blit(defense_text_surface, defense_text_rect)
+
+        # --- CALL THE INVENTORY ICON DRAWING METHOD HERE! ---
+        self.draw_inventory_icons(screen, hero_instance) 
+
+    #--- Inventory icon function (this method is correct as is, but needed to be called) ---
+    def draw_inventory_icons(self, screen, hero_instance):
+        current_x = self.inventory_start_x
+        current_y = self.inventory_start_y
+
+        #Quick adjust, code it properly later
+        current_x = current_x - 12
+        
+        # Draw placeholder slots up to hero.equipment_slots
+        for i in range(hero_instance.equipment_slots):
+            slot_rect = pygame.Rect(current_x, current_y + (self.icon_size + self.icon_padding) * i, self.icon_size, self.icon_size)
+            pygame.draw.rect(screen, self.DARK_GRAY, slot_rect, 0) # Draw empty slot background
+            pygame.draw.rect(screen, self.GRAY, slot_rect, 1) # Draw slot border
+
+        # Draw actual equipped items
+        for i, item_card in enumerate(hero_instance.current_equipment):
+            # Calculate position for this item
+            item_x = self.inventory_start_x
+            item_y = self.inventory_start_y + (self.icon_size + self.icon_padding) * i
+            
+            #Quick adjust, code it properly later
+            item_x = item_x - 12
+
+            item_rect = pygame.Rect(item_x, item_y, self.icon_size, self.icon_size)
+
+            # For now, just draw a colored rectangle with item's name
+            # Later, replace with actual sprite drawing (item_card.sprite if it exists)
+            color = (0, 150, 0) if item_card.card_type == "equipment" else (150, 0, 150) # Example colors
+            
+            # Draw background square
+            pygame.draw.rect(screen, color, item_rect)
+            # Draw border
+            pygame.draw.rect(screen, self.WHITE, item_rect, 2) # White border for equipped item
+
+            # Draw item name (or first letter) for placeholder
+            text_surface = self.card_text_font.render(item_card.name[0].upper(), True, self.BLACK) # Just first letter
+            text_rect = text_surface.get_rect(center=item_rect.center)
+            screen.blit(text_surface, text_rect)
+
 
     def get_deck_rect(self):
         return self.deck_rect
@@ -300,7 +355,7 @@ while running:
                                     if damage_potentail == hero.min_attack:
                                         if deck_drawn_card.attack == hero.min_defense:
                                             deck_drawn_card.defense = hero.min_attack - 1
-                                            
+
                                 # Delegate combat start to BattleManager
                                 current_game_room_sub_state = battle_manager.start_combat(deck_drawn_card)
                                 
