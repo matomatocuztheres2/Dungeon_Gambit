@@ -66,3 +66,15 @@ Dungeon Gambit is a high-stakes, pick-up-and-play Pygame deck-builder and dungeo
     * **(Add instructions for other Linux distros if you expect them, e.g., Fedora/Arch)**
 
 * **"command not found: python" or "command not found: pip":** Make sure Python is installed and added to your system's PATH. Restart your terminal.
+
+* **Game window opens, but nothing is visible / just a blank box (especially on WSL/Linux):**
+    This can happen if the graphical compositor in your WSL environment gets into a bad state.
+    1.  **Close all WSL terminal windows and any running WSL applications.**
+    2.  Open **Windows Command Prompt or PowerShell** (not inside WSL).
+    3.  Run the command:
+        ```cmd
+        wsl --shutdown
+        ```
+    4.  Wait 15-20 seconds.
+    5.  Open your Ubuntu WSL terminal again.
+    6.  Try running the game.

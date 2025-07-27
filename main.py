@@ -3,6 +3,7 @@ import sys
 import math
 import time
 import random
+import os
 
 from objects.deck_ob import Hero, Card, setup_new_game
 from objects.battle_ob import BattleManager 
@@ -10,6 +11,7 @@ from objects.inventory_ob import InventoryManager
 from objects.level_ob import LevelManager
 
 # --- Game Constants ---
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 0)
 WIDTH, HEIGHT = 480, 720
 FPS = 30  # Frames per second
 
