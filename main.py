@@ -433,6 +433,13 @@ while running:
                         current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
                         tap_to_start_start_time = pygame.time.get_ticks() # Reset title screen animation timer
 
+                elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_START: # This is the state where "Treasure!" has animated
+                    print("NEXT_TURN_EVENT triggered for EQUIPMENT_FOUND state. Transitioning to applying buffs.")
+                    # This call handles applying buffs and setting subsequent pop-ups
+                    current_game_room_sub_state = inventory_manager.handle_player_buff(hero) 
+                    # After applying buffs, set a short timer for a visual delay before IDLE
+                    pygame.time.set_timer(NEXT_TURN_EVENT, 1000)
+                
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
                     # Allow click to dismiss the "Equipment Added" state and go back to IDLE
                     print("Equipment Added. Ready to draw next card.")
@@ -455,6 +462,7 @@ while running:
                     battle_manager.current_enemy = None # Clear current enemy in BattleManager
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
                     tap_to_start_start_time = pygame.time.get_ticks() # Reset title screen animation timer
+                
 
         # --- Custom Events for Timed Actions (Automated Turns) ---
         if event.type == NEXT_TURN_EVENT:
@@ -574,7 +582,11 @@ while running:
         
         current_game_room_sub_state = new_sub_state_after_anim # Update the main state variable
 
+        inventory_manager.update_popups()
+
         battle_manager.draw_combat_elements(screen)
+
+        inventory_manager.draw_popups(screen)
 
     # --- Update Display ---
     pygame.display.flip()

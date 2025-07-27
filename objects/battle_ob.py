@@ -151,13 +151,7 @@ class BattleManager:
         damage_dealt = hero_instance.attack
         
         effective_damage_to_enemy = max(0, damage_dealt - self.current_enemy.current_defense)
-        '''if hero_instance.attack > hero_instance.min_attack:
-            if self.current_enemy.current_defense > 0:
-                self.current_enemy.current_defense = self.current_enemy.current_defense - 1
-
-            print(f"Attack of {hero_instance.attack} dropping by 1")
-            hero_instance.attack = hero_instance.attack - 1
-            Commenting out before confirming if new method works.'''
+        
         if hero_instance.attack > hero_instance.min_attack:
             if self.current_enemy.current_defense > 0:
                 self.current_enemy.current_defense = self.current_enemy.current_defense - 1
