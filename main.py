@@ -157,6 +157,16 @@ class GameRoomUI:
         self.inventory_start_x = self.padding # Start from left edge, with padding
         self.inventory_start_y = self.deck_y # Align with the top of the deck
 
+        #MODIFIED: XP Display Area for Text Only ---
+        # These help define the conceptual space for text positioning
+        self.xp_display_area_width = 100 # Approx. width needed for XP text
+        self.xp_display_area_height = 80 # Approx. height needed for two lines of text
+        self.xp_padding_right = 20 # Padding from the right edge of the screen
+
+        # Calculate the top-left corner of this conceptual area
+        self.xp_display_x = self.WIDTH - self.xp_display_area_width - self.xp_padding_right
+        self.xp_display_y = self.deck_y # Align with the top of the deck
+
 
     def draw_game_room(self, screen, hero_instance, deck_drawn_card): 
         """Draws all game room elements to the screen."""
@@ -252,8 +262,11 @@ class GameRoomUI:
         defense_text_rect = defense_text_surface.get_rect(center=self.defense_rect.center)
         screen.blit(defense_text_surface, defense_text_rect)
 
-        # --- CALL THE INVENTORY ICON DRAWING METHOD HERE! ---
+        # --- CALL THE INVENTORY ICON DRAWING ---
         self.draw_inventory_icons(screen, hero_instance) 
+
+        #--- CALL XP DRAWING ---
+        self.draw_xp_display(screen, hero_instance)
 
     #--- Inventory icon function (this method is correct as is, but needed to be called) ---
     def draw_inventory_icons(self, screen, hero_instance):
@@ -293,6 +306,26 @@ class GameRoomUI:
             text_surface = self.card_text_font.render(item_card.name[0].upper(), True, self.BLACK) # Just first letter
             text_rect = text_surface.get_rect(center=item_rect.center)
             screen.blit(text_surface, text_rect)
+    
+    def draw_xp_display(self, screen, hero_instance):
+        """Draws the hero's current XP as text on the screen, right-aligned."""
+        text_right_anchor_x = self.WIDTH - self.xp_padding_right # Use the screen width minus your right padding
+        #Quick fix, update properly later
+        text_right_anchor_x = text_right_anchor_x + 10
+
+        # Position the "XP" label
+        xp_label_surface = self.stat_font.render("XP", True, self.WHITE) 
+        xp_label_rect = xp_label_surface.get_rect(
+            topright=(text_right_anchor_x, self.xp_display_y + 10) # 10px down from top, right-aligned
+        ) 
+        screen.blit(xp_label_surface, xp_label_rect)
+
+        # Position the current XP value
+        xp_value_surface = self.stat_font.render(f"{hero_instance.experience}", True, self.WHITE)
+        xp_value_rect = xp_value_surface.get_rect(
+            topright=(text_right_anchor_x, self.xp_display_y + 40) 
+        ) 
+        screen.blit(xp_value_surface, xp_value_rect)
 
 
     def get_deck_rect(self):
