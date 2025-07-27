@@ -8,6 +8,7 @@ class LevelManager:
         self.WIDTH = screen_width
         self.HEIGHT = screen_height
         self.game_room_ui = game_room_ui_instance 
+        self.LEVEL_UP_XP_THRESHOLD = 40 # Define your XP purchase threshold here
 
         self.WHITE = (255, 255, 255)
         self.RED = (255, 0, 0)      
@@ -25,7 +26,6 @@ class LevelManager:
         self.buff_text_display_duration = 2000 
         self.buff_text_color = self.WHITE 
 
-        self.current_level_up_card = None 
 
         self.buff_display_list = [] 
 
@@ -73,40 +73,52 @@ class LevelManager:
         attack_boost = self.current_level_up_card.attack
         defense_boost = self.current_level_up_card.defense
 
-        # Apply boosts and prepare messages
         boost_message_parts = []
 
-        if health_boost > 0:
-            hero_instance.max_health += health_boost
-            hero_instance.health += health_boost
-            boost_message_parts.append(f"+{health_boost} Max HP")
-            self._display_floating_buff_text(f"+{health_boost} Max HP", 
-                                                self.GREEN, self.game_room_ui.get_health_rect().center)
-            print(f"Max Health: {old_max_health} -> {hero_instance.max_health} (+{health_boost})")
+        required_xp = self.LEVEL_UP_XP_THRESHOLD
+        if hero_instance.experience < required_xp:
+            print(f"Need {required_xp} XP for level up!\n(Current: {hero_instance.experience})")
+            final_message = "Not Enough XP!\n" + "\n".join(boost_message_parts)
+            self._trigger_main_level_up_popup(final_message, self.RED, 2500) 
 
-        if attack_boost > 0:
-            hero_instance.min_attack += attack_boost
-            hero_instance.attack += attack_boost 
-            boost_message_parts.append(f"+{attack_boost} Min ATK")
-            self._display_floating_buff_text(f"+{attack_boost} Min ATK", 
-                                                self.GREEN, self.game_room_ui.get_attack_rect().center)
-            print(f"Min Attack: {old_min_attack} -> {hero_instance.min_attack} (+{attack_boost})")
-
-        if defense_boost > 0:
-            hero_instance.min_defense += defense_boost
-            hero_instance.defense += defense_boost 
-            boost_message_parts.append(f"+{defense_boost} Min DEF")
-            self._display_floating_buff_text(f"+{defense_boost} Min DEF", 
-                                                self.GREEN, self.game_room_ui.get_defense_rect().center)
-            print(f"Min Defense: {old_min_defense} -> {hero_instance.min_defense} (+{defense_boost})")
+        # Apply boosts and prepare messages
         
-        # Trigger a final main pop-up summarizing boosts, if any
-        if boost_message_parts:
-            final_message = "Level Up Complete!\n" + "\n".join(boost_message_parts)
-            self._trigger_main_level_up_popup(final_message, self.GREEN, 2500) 
-        else:
-            self._trigger_main_level_up_popup("No Stat Boosts!", self.RED, 1500)
 
+        elif hero_instance.experience >= required_xp:
+            if health_boost > 0:
+                hero_instance.max_health += health_boost
+                hero_instance.health += health_boost
+                boost_message_parts.append(f"+{health_boost} Max HP")
+                self._display_floating_buff_text(f"+{health_boost} Max HP", 
+                                                    self.GREEN, self.game_room_ui.get_health_rect().center)
+                print(f"Max Health: {old_max_health} -> {hero_instance.max_health} (+{health_boost})")
+
+            if attack_boost > 0:
+                hero_instance.min_attack += attack_boost
+                hero_instance.attack += attack_boost 
+                boost_message_parts.append(f"+{attack_boost} Min ATK")
+                self._display_floating_buff_text(f"+{attack_boost} Min ATK", 
+                                                    self.GREEN, self.game_room_ui.get_attack_rect().center)
+                print(f"Min Attack: {old_min_attack} -> {hero_instance.min_attack} (+{attack_boost})")
+
+            if defense_boost > 0:
+                hero_instance.min_defense += defense_boost
+                hero_instance.defense += defense_boost 
+                boost_message_parts.append(f"+{defense_boost} Min DEF")
+                self._display_floating_buff_text(f"+{defense_boost} Min DEF", 
+                                                    self.GREEN, self.game_room_ui.get_defense_rect().center)
+                print(f"Min Defense: {old_min_defense} -> {hero_instance.min_defense} (+{defense_boost})")
+            
+            # Trigger a final main pop-up summarizing boosts, if any
+            if boost_message_parts:
+                final_message = "Level Up Complete!\n" + "\n".join(boost_message_parts)
+                self._trigger_main_level_up_popup(final_message, self.GREEN, 2500) 
+            else:
+                self._trigger_main_level_up_popup("No Stat Boosts!", self.RED, 1500)
+
+            hero_instance.experience = hero_instance.experience - required_xp
+ 
+        
         self.current_level_up_card = None 
         return "LEVEL_UP_ADDED" 
 

@@ -33,7 +33,6 @@ GAME_STATE_GAME_ROOM = "GAME_ROOM"
 # --- Game Room Sub-States (within GAME_STATE_GAME_ROOM) ---
 GAME_ROOM_SUB_STATE_IDLE = "IDLE"
 GAME_ROOM_SUB_STATE_EQUIPMENT_START = "EQUIPMENT_FOUND"
-GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED = "EQUIPMENT_TURN"
 GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED = "EQUIPMENT_ADDED"
 GAME_ROOM_SUB_STATE_COMBAT_START = "COMBAT_START"
 GAME_ROOM_SUB_STATE_PLAYER_TURN = "PLAYER_TURN"
@@ -424,11 +423,11 @@ while running:
                             elif deck_drawn_card.card_type == "equipment":
                                 # Delegate inventory start to InventoryManager
                                 current_game_room_sub_state = inventory_manager.start_inventory(deck_drawn_card)
-                                pygame.time.set_timer(NEXT_TURN_EVENT, 1000)
+                                pygame.time.set_timer(NEXT_TURN_EVENT, 2000)
 
                             elif deck_drawn_card.card_type == "level up": 
                                 current_game_room_sub_state = level_manager.start_level_up(deck_drawn_card)
-                                pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Short timer to allow "Level Up!" pop-up to show
+                                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Short timer to allow "Level Up!" pop-up to show
 
                             else:
                                 # For other card types (equipment, level up)
@@ -467,12 +466,12 @@ while running:
                     # This call handles applying buffs and setting subsequent pop-ups
                     current_game_room_sub_state = inventory_manager.handle_player_buff(hero) 
                     # After applying buffs, set a short timer for a visual delay before IDLE
-                    pygame.time.set_timer(NEXT_TURN_EVENT, 1000)
+                    pygame.time.set_timer(NEXT_TURN_EVENT, 2000)
 
-                elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_START: # --- NEW ---
+                elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_START:
                     print("NEXT_TURN_EVENT triggered for LEVEL_UP_FOUND state. Transitioning to applying boosts.")
                     current_game_room_sub_state = level_manager.handle_level_up(hero)
-                    pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Give time for boost pop-ups
+                    pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Give time for boost pop-ups
                 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
                     # Allow click to dismiss the "Equipment Added" state and go back to IDLE
@@ -514,7 +513,7 @@ while running:
                     current_game_room_sub_state = new_sub_state
                     
                     if new_sub_state == GAME_ROOM_SUB_STATE_ENEMY_TURN:
-                        pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Enemy turn auto-triggers after 1 sec
+                        pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Enemy turn auto-triggers after 1 sec
                 else:
                     print("Error: Player or enemy missing during player turn.")
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Fallback to idle
@@ -525,7 +524,7 @@ while running:
                     current_game_room_sub_state = new_sub_state
 
                     if new_sub_state == GAME_ROOM_SUB_STATE_PLAYER_TURN:
-                        pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Player turn auto-triggers after 1 sec
+                        pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Player turn auto-triggers after 1 sec
                 else:
                     print("Error: Player or enemy missing during enemy turn.")
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Fallback to idle
@@ -535,10 +534,21 @@ while running:
                 # Now that the "Treasure!" animation time has passed, apply the buffs
                 current_game_room_sub_state = inventory_manager.handle_player_buff(hero) # This method should return GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED
                 # After applying buffs, set a short timer to transition to IDLE after the buff numbers animate
-                pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # 1 second for buff number animation
+                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # 1 second for buff number animation
 
             elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
                 print("NEXT_TURN_EVENT triggered for EQUIPMENT_ADDED state. Returning to IDLE.")
+                # Buff animation is done, go back to IDLE
+                current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
+
+            elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_START:
+                print("NEXT_TURN_EVENT triggered for LEVEL_UP_START state. Transitioning to applying buffs.")
+                current_game_room_sub_state = level_manager.handle_level_up(hero) # This method should return GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED
+                # After applying buffs, set a short timer to transition to IDLE after the buff numbers animate
+                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # 1 second for buff number animation
+
+            elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_ADDED:
+                print("NEXT_TURN_EVENT triggered for LEVEL_UP_ADDED state. Returning to IDLE.")
                 # Buff animation is done, go back to IDLE
                 current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
 
