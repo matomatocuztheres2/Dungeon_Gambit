@@ -112,7 +112,7 @@ class BattleManager:
 
     def start_victory_animation(self):
         """Starts the 'Victory!' animation."""
-        self.combat_text_message = "Victory!"
+        self.combat_text_message = f"Victory!\n+{self.current_enemy.xp_gain}XP"
         self.combat_text_start_time = pygame.time.get_ticks()
         self.combat_text_alpha = 255
         self.combat_text_scale = 0.1
@@ -151,12 +151,42 @@ class BattleManager:
         damage_dealt = hero_instance.attack
         
         effective_damage_to_enemy = max(0, damage_dealt - self.current_enemy.current_defense)
-        if hero_instance.attack > hero_instance.min_attack:
+        '''if hero_instance.attack > hero_instance.min_attack:
             if self.current_enemy.current_defense > 0:
                 self.current_enemy.current_defense = self.current_enemy.current_defense - 1
 
             print(f"Attack of {hero_instance.attack} dropping by 1")
             hero_instance.attack = hero_instance.attack - 1
+            Commenting out before confirming if new method works.'''
+        if hero_instance.attack > hero_instance.min_attack:
+            if self.current_enemy.current_defense > 0:
+                self.current_enemy.current_defense = self.current_enemy.current_defense - 1
+            print(f"Attack of {hero_instance.attack} dropping by 1")
+            # Reduce hero's aggregate attack by 1 for this hit, but not below min_attack
+            hero_instance.attack = max(hero_instance.min_attack, hero_instance.attack - 1)
+            print(f"Hero's attack degraded to {hero_instance.attack}.")
+
+            # Now, check if this degradation means an equipment piece should break and be removed.
+            # This triggers if the hero's aggregate attack has dropped to their base 'fist' attack.
+            if hero_instance.attack <= hero_instance.min_attack:
+                print("Hero's attack reached minimum. Checking for weapon to break...")
+                
+                # Find the oldest weapon piece in the inventory that can break
+                weapon_to_remove_index = self._find_oldest_degradable_weapon(hero_instance)
+
+                if weapon_to_remove_index != -1:
+                    removed_card = hero_instance.current_equipment.pop(weapon_to_remove_index)
+                    
+                    # Revert the stats that this specific broken card *originally provided*
+                    # This ensures the hero's total attack accurately reflects remaining items.
+                    hero_instance.attack -= removed_card.attack 
+                    hero_instance.attack = max(hero_instance.attack, hero_instance.min_attack) # Ensure attack doesn't go below actual min
+
+                    print(f"Weapon piece '{removed_card.name}' broke! Removed from inventory.")
+                    print(f"Hero's new current Attack: {hero_instance.attack}")
+                else:
+                    print("No degradable weapon found to remove, despite attack hitting threshold.")
+
         self.current_enemy.current_health -= effective_damage_to_enemy
         self._display_damage_text(effective_damage_to_enemy, self.RED, self.game_room_ui.get_enemy_health_rect().center) # Show damage on enemy
 
