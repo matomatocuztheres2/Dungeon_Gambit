@@ -325,27 +325,27 @@ class GameRoomUI:
                     screen.blit(self.card_health_icon_sprite, self.enemy_health_rect.topleft)
                 else: # Fallback
                     pygame.draw.rect(screen, self.RED, self.enemy_health_rect, 3) # Outline
-                    enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
-                    enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
-                    screen.blit(enemy_health_text_surface, enemy_health_text_rect)
+                enemy_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.current_health}", True, self.WHITE)
+                enemy_health_text_rect = enemy_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(enemy_health_text_surface, enemy_health_text_rect)
 
                 # Enemy Attack Placeholder
                 if self.card_attack_icon_sprite:
                     screen.blit(self.card_attack_icon_sprite, self.enemy_attack_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
-                    enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
-                    enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
-                    screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
+                enemy_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                enemy_attack_text_rect = enemy_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(enemy_attack_text_surface, enemy_attack_text_rect)
 
                 # Enemy Defense Placeholder
                 if self.card_defense_icon_sprite:
                     screen.blit(self.card_defense_icon_sprite, self.enemy_defense_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
-                    enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
-                    enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
-                    screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
+                enemy_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.current_defense}", True, self.WHITE)
+                enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
 
             # --- Equipment Card Stats (Modified) ---
             elif deck_drawn_card.card_type == "equipment": 
@@ -354,27 +354,27 @@ class GameRoomUI:
                     screen.blit(self.card_health_icon_sprite, self.enemy_health_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_health_rect, 3) # Outline
-                    equipment_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.health}", True, self.WHITE) 
-                    equipment_health_text_rect = equipment_health_text_surface.get_rect(center=self.enemy_health_rect.center)
-                    screen.blit(equipment_health_text_surface, equipment_health_text_rect)
+                equipment_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.health}", True, self.WHITE) 
+                equipment_health_text_rect = equipment_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(equipment_health_text_surface, equipment_health_text_rect)
 
                 # Equipment Attack Placeholder
                 if self.card_attack_icon_sprite:
                     screen.blit(self.card_attack_icon_sprite, self.enemy_attack_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
-                    equipment_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
-                    equipment_attack_text_rect = equipment_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
-                    screen.blit(equipment_attack_text_surface, equipment_attack_text_rect)
+                equipment_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                equipment_attack_text_rect = equipment_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(equipment_attack_text_surface, equipment_attack_text_rect)
 
                 # Equipment Defense Placeholder
                 if self.card_defense_icon_sprite:
                     screen.blit(self.card_defense_icon_sprite, self.enemy_defense_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
-                    equipment_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.defense}", True, self.WHITE)
-                    equipment_defense_text_rect = equipment_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
-                    screen.blit(equipment_defense_text_surface, equipment_defense_text_rect)
+                equipment_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.defense}", True, self.WHITE)
+                equipment_defense_text_rect = equipment_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(equipment_defense_text_surface, equipment_defense_text_rect)
 
             # --- Level Up Card Stats (Modified) ---
             elif deck_drawn_card.card_type == "level up": 
@@ -383,27 +383,27 @@ class GameRoomUI:
                     screen.blit(self.card_health_icon_sprite, self.enemy_health_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_health_rect, 3) # Outline
-                    level_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.health}", True, self.WHITE) 
-                    level_health_text_rect = level_health_text_surface.get_rect(center=self.enemy_health_rect.center)
-                    screen.blit(level_health_text_surface, level_health_text_rect)
+                level_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.health}", True, self.WHITE) 
+                level_health_text_rect = level_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(level_health_text_surface, level_health_text_rect)
 
                 # Level Up Attack Placeholder (for Min ATK boost)
                 if self.card_attack_icon_sprite:
                     screen.blit(self.card_attack_icon_sprite, self.enemy_attack_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
-                    level_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
-                    level_attack_text_rect = level_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
-                    screen.blit(level_attack_text_surface, level_attack_text_rect)
+                level_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                level_attack_text_rect = level_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(level_attack_text_surface, level_attack_text_rect)
 
                 # Level Up Defense Placeholder (for Min DEF boost)
                 if self.card_defense_icon_sprite:
                     screen.blit(self.card_defense_icon_sprite, self.enemy_defense_rect.topleft)
                 else:
                     pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
-                    level_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.defense}", True, self.WHITE)
-                    level_defense_text_rect = level_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
-                    screen.blit(level_defense_text_surface, level_defense_text_rect)
+                level_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.defense}", True, self.WHITE)
+                level_defense_text_rect = level_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(level_defense_text_surface, level_defense_text_rect)
 
             else: # For Dungeon Exit
                 card_info_surface = self.card_text_font.render(
