@@ -6,7 +6,8 @@ import random
 
 from objects.deck_ob import Hero, Card, setup_new_game
 from objects.battle_ob import BattleManager 
-from objects.inventory_ob import IntventoryManager
+from objects.inventory_ob import InventoryManager
+from objects.level_ob import LevelManager
 
 # --- Game Constants ---
 WIDTH, HEIGHT = 480, 720
@@ -39,6 +40,8 @@ GAME_ROOM_SUB_STATE_PLAYER_TURN = "PLAYER_TURN"
 GAME_ROOM_SUB_STATE_ENEMY_TURN = "ENEMY_TURN"
 GAME_ROOM_SUB_STATE_COMBAT_END_VICTORY = "COMBAT_END_VICTORY"
 GAME_ROOM_SUB_STATE_COMBAT_END_DEFEAT = "COMBAT_END_DEFEAT"
+GAME_ROOM_SUB_STATE_LEVEL_UP_START = "LEVEL_UP_FOUND"
+GAME_ROOM_SUB_STATE_LEVEL_UP_ADDED = "LEVEL_UP_ADDED"
 GAME_ROOM_SUB_STATE_DUNGEON_EXIT_ANIMATION = "DUNGEON_EXIT_ANIMATION"
 GAME_ROOM_SUB_STATE_REWARD_SCREEN = "REWARD_SCREEN"
 
@@ -216,7 +219,7 @@ class GameRoomUI:
                 enemy_defense_text_rect = enemy_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
                 screen.blit(enemy_defense_text_surface, enemy_defense_text_rect)
 
-            if deck_drawn_card.card_type == "equipment": # This branch also needs its stats displayed correctly
+            elif deck_drawn_card.card_type == "equipment": # This branch also needs its stats displayed correctly
                 # Equipment Health Placeholder (for its 'charges' or 'durability' if applicable)
                 pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_health_rect, 3) # Outline
                 # Using 'health' as a general stat for equipment, e.g., durability
@@ -236,7 +239,27 @@ class GameRoomUI:
                 equipment_defense_text_rect = equipment_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
                 screen.blit(equipment_defense_text_surface, equipment_defense_text_rect)
 
-            else: # For non-enemy/non-equipment cards, display generic card info (e.g., Level Up, Dungeon Exit)
+            elif deck_drawn_card.card_type == "level up": 
+                # Level Up card functions
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_health_rect, 3) # Outline
+                # Using 'health' as a general stat for Level, e.g., durability
+                level_health_text_surface = self.stat_font.render(f"HP: {deck_drawn_card.health}", True, self.WHITE) 
+                level_health_text_rect = level_health_text_surface.get_rect(center=self.enemy_health_rect.center)
+                screen.blit(level_health_text_surface, level_health_text_rect)
+
+                # Level Attack Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_attack_rect, 3) # Outline
+                level_attack_text_surface = self.stat_font.render(f"ATK: {deck_drawn_card.attack}", True, self.WHITE)
+                level_attack_text_rect = level_attack_text_surface.get_rect(center=self.enemy_attack_rect.center)
+                screen.blit(level_attack_text_surface, level_attack_text_rect)
+
+                # Level Defense Placeholder
+                pygame.draw.rect(screen, self.NEON_YELLOW, self.enemy_defense_rect, 3) # Outline
+                level_defense_text_surface = self.stat_font.render(f"DEF: {deck_drawn_card.defense}", True, self.WHITE)
+                level_defense_text_rect = level_defense_text_surface.get_rect(center=self.enemy_defense_rect.center)
+                screen.blit(level_defense_text_surface, level_defense_text_rect)
+
+            else: # For Dungeon Exit
                 card_info_surface = self.card_text_font.render(
                     "No info has been added yet", True, self.BLACK
                 )
@@ -357,7 +380,9 @@ game_room_ui = GameRoomUI(WIDTH, HEIGHT) # Instantiate the UI renderer
 battle_manager = BattleManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to BattleManager
 
 # --- Inventory Manager Instance ---
-inventory_manager = IntventoryManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to BattleManager
+inventory_manager = InventoryManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to EquipmentManager
+
+level_manager = LevelManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to LevelManager
 
 # --- Main Game Loop ---
 running = True
@@ -401,8 +426,12 @@ while running:
                                 current_game_room_sub_state = inventory_manager.start_inventory(deck_drawn_card)
                                 pygame.time.set_timer(NEXT_TURN_EVENT, 1000)
 
+                            elif deck_drawn_card.card_type == "level up": 
+                                current_game_room_sub_state = level_manager.start_level_up(deck_drawn_card)
+                                pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Short timer to allow "Level Up!" pop-up to show
+
                             else:
-                                # For other card types (equipment, level_up)
+                                # For other card types (equipment, level up)
                                 print(f"Drew {deck_drawn_card.card_type}: {deck_drawn_card.name}")
                                 # In the future, this would lead to equipping/using the card
                         else:
@@ -439,6 +468,11 @@ while running:
                     current_game_room_sub_state = inventory_manager.handle_player_buff(hero) 
                     # After applying buffs, set a short timer for a visual delay before IDLE
                     pygame.time.set_timer(NEXT_TURN_EVENT, 1000)
+
+                elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_START: # --- NEW ---
+                    print("NEXT_TURN_EVENT triggered for LEVEL_UP_FOUND state. Transitioning to applying boosts.")
+                    current_game_room_sub_state = level_manager.handle_level_up(hero)
+                    pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Give time for boost pop-ups
                 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
                     # Allow click to dismiss the "Equipment Added" state and go back to IDLE
@@ -446,6 +480,11 @@ while running:
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
                     pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Stop any lingering timers for this state
                     deck_drawn_card = None
+
+                elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_ADDED: # --- NEW ---
+                    print("NEXT_TURN_EVENT triggered for LEVEL_UP_ADDED state. Transitioning to IDLE.")
+                    current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
+                    pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Turn off timer
                         
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_DUNGEON_EXIT_ANIMATION:
                     # After "You Survived!" fades, any tap leads to reward screen
@@ -583,10 +622,12 @@ while running:
         current_game_room_sub_state = new_sub_state_after_anim # Update the main state variable
 
         inventory_manager.update_popups()
+        level_manager.update_popups()
 
         battle_manager.draw_combat_elements(screen)
 
         inventory_manager.draw_popups(screen)
+        level_manager.draw_popups(screen)
 
     # --- Update Display ---
     pygame.display.flip()
