@@ -182,7 +182,7 @@ class BattleManager:
                     print("No degradable weapon found to remove, despite attack hitting threshold.")
 
         self.current_enemy.current_health -= effective_damage_to_enemy
-        self._display_damage_text(effective_damage_to_enemy, self.RED, self.game_room_ui.get_enemy_health_rect().center) # Show damage on enemy
+        self._display_damage_text(effective_damage_to_enemy, self.RED, self.game_room_ui.get_card_health_rect().center) # Show damage on enemy
 
         self.shake_target_rect_name = 'enemy_card'
         self.shake_start_time = pygame.time.get_ticks()
