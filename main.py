@@ -45,14 +45,49 @@ GAME_ROOM_SUB_STATE_DUNGEON_EXIT_ANIMATION = "DUNGEON_EXIT_ANIMATION"
 GAME_ROOM_SUB_STATE_REWARD_SCREEN = "REWARD_SCREEN"
 
 # --- Custom Pygame Events ---
-# This event will be triggered when it's time for the next turn to process automatically
 NEXT_TURN_EVENT = pygame.USEREVENT + 1
 
 # --- Pygame Initialization ---
 pygame.init()
+pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Dungeon's Gambit")
 clock = pygame.time.Clock()
+
+# --- Initialize BG Music ---
+# Define music file path
+BACKGROUND_MUSIC_PATH = './sounds/2019-02-25_-_Poisonous_-_David_Fesliyan.mp3'
+
+# --- Preaload SFX ---
+SOUND_EFFECTS = {} 
+
+try:
+    SOUND_EFFECTS['card_draw'] = pygame.mixer.Sound('./sounds/card_draw_so.mp3')
+    SOUND_EFFECTS['card_draw'].set_volume(0.3) # Adjust volume if needed, 0.0 to 1.0
+
+    SOUND_EFFECTS['hit_or_trap'] = pygame.mixer.Sound('./sounds/trap_so.wav')
+    SOUND_EFFECTS['hit_or_trap'].set_volume(0.5) # Adjust volume if needed
+
+    SOUND_EFFECTS['tap_card'] = pygame.mixer.Sound('./sounds/tap_so.mp3')
+    SOUND_EFFECTS['tap_card'].set_volume(0.4) # Adjust volume if needed
+
+    print("Sound effects loaded successfully.")
+except pygame.error as e:
+    print(f"Error loading sound effect: {e}")
+    print("Please ensure sound files exist and are valid audio files.")
+
+# --- Set the volume (0.0 to 1.0) Because no one likes popping their eardrum---
+MUSIC_VOLUME = 0.1 # 10% volume
+
+try:
+    pygame.mixer.music.load(BACKGROUND_MUSIC_PATH)
+    pygame.mixer.music.set_volume(MUSIC_VOLUME)
+    # Play indefinitely (-1 means loop forever)
+    pygame.mixer.music.play(-1) 
+    print(f"Background music '{BACKGROUND_MUSIC_PATH}' started at {MUSIC_VOLUME*100}% volume, looping.")
+except pygame.error as e:
+    print(f"Error loading or playing music: {e}")
+    print(f"Please ensure '{BACKGROUND_MUSIC_PATH}' exists and is a valid audio file.")
 
 # --- Title Screen Elements ---
 title_font = None
@@ -154,13 +189,9 @@ class GameRoomUI:
         self.icon_size = 60
         self.icon_padding = 2 # Padding between icons
 
-        # Calculate starting X for the inventory icons
-        # Top-left of the first icon:
         self.inventory_start_x = self.padding # Start from left edge, with padding
         self.inventory_start_y = self.deck_y # Align with the top of the deck
 
-        #MODIFIED: XP Display Area for Text Only ---
-        # These help define the conceptual space for text positioning
         self.xp_display_area_width = 100 # Approx. width needed for XP text
         self.xp_display_area_height = 80 # Approx. height needed for two lines of text
         self.xp_padding_right = 20 # Padding from the right edge of the screen
@@ -315,8 +346,6 @@ class GameRoomUI:
 
             item_rect = pygame.Rect(item_x, item_y, self.icon_size, self.icon_size)
 
-            # For now, just draw a colored rectangle with item's name
-            # Later, replace with actual sprite drawing (item_card.sprite if it exists)
             color = (0, 150, 0) if item_card.card_type == "equipment" else (150, 0, 150) # Example colors
             
             # Draw background square
@@ -324,7 +353,6 @@ class GameRoomUI:
             # Draw border
             pygame.draw.rect(screen, self.WHITE, item_rect, 2) # White border for equipped item
 
-            # Draw item name (or first letter) for placeholder
             text_surface = self.card_text_font.render(item_card.name[0].upper(), True, self.BLACK) # Just first letter
             text_rect = text_surface.get_rect(center=item_rect.center)
             screen.blit(text_surface, text_rect)
@@ -335,14 +363,12 @@ class GameRoomUI:
         #Quick fix, update properly later
         text_right_anchor_x = text_right_anchor_x + 10
 
-        # Position the "XP" label
         xp_label_surface = self.stat_font.render("XP", True, self.WHITE) 
         xp_label_rect = xp_label_surface.get_rect(
             topright=(text_right_anchor_x, self.xp_display_y + 10) # 10px down from top, right-aligned
         ) 
         screen.blit(xp_label_surface, xp_label_rect)
 
-        # Position the current XP value
         xp_value_surface = self.stat_font.render(f"{hero_instance.experience}", True, self.WHITE)
         xp_value_rect = xp_value_surface.get_rect(
             topright=(text_right_anchor_x, self.xp_display_y + 40) 
@@ -352,35 +378,27 @@ class GameRoomUI:
 
     def get_deck_rect(self):
         return self.deck_rect
-
     def get_health_rect(self):
         return self.health_rect
-
     def get_attack_rect(self):
         return self.attack_rect
-    
     def get_defense_rect(self):
         return self.defense_rect
-
     def get_enemy_health_rect(self):
         return self.enemy_health_rect
-
     def get_enemy_attack_rect(self):
         return self.enemy_attack_rect
-    
     def get_enemy_defense_rect(self):
         return self.enemy_defense_rect
 
 
 # --- Game Room UI Instance ---
 game_room_ui = GameRoomUI(WIDTH, HEIGHT) # Instantiate the UI renderer
-
 # --- Battle Manager Instance ---
 battle_manager = BattleManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to BattleManager
-
 # --- Inventory Manager Instance ---
 inventory_manager = InventoryManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to EquipmentManager
-
+# --- Level Manager Instance ---
 level_manager = LevelManager(WIDTH, HEIGHT, game_room_ui) # Pass UI instance to LevelManager
 
 # --- Main Game Loop ---
@@ -398,12 +416,12 @@ while running:
                 shuffling_start_time = pygame.time.get_ticks() # Start timer for shuffling animation
                 current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Reset sub-state
             elif current_game_state == GAME_STATE_GAME_ROOM:
-                # Only process clicks for drawing cards or dismissing combat/exit messages
                 if current_game_room_sub_state == GAME_ROOM_SUB_STATE_IDLE:
                     if game_room_ui.get_deck_rect().collidepoint(event.pos): # Use getter
                         if main_deck:
                             deck_drawn_card = main_deck.pop(0)
                             print(f"Drew card: {deck_drawn_card.name}")
+                            SOUND_EFFECTS['card_draw'].play()
 
                             if deck_drawn_card.card_type == "enemy":
                                 # Added bug correction to prevent infinite combat
@@ -413,7 +431,6 @@ while running:
                                         if deck_drawn_card.attack == hero.min_defense:
                                             deck_drawn_card.defense = hero.min_attack - 1
 
-                                # Delegate combat start to BattleManager
                                 current_game_room_sub_state = battle_manager.start_combat(deck_drawn_card)
                                 
                             elif deck_drawn_card.card_type == "dungeon exit":
@@ -421,7 +438,6 @@ while running:
                             
                             
                             elif deck_drawn_card.card_type == "equipment":
-                                # Delegate inventory start to InventoryManager
                                 current_game_room_sub_state = inventory_manager.start_inventory(deck_drawn_card)
                                 pygame.time.set_timer(NEXT_TURN_EVENT, 2000)
 
@@ -430,16 +446,13 @@ while running:
                                 pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Short timer to allow "Level Up!" pop-up to show
 
                             else:
-                                # For other card types (equipment, level up)
                                 print(f"Drew {deck_drawn_card.card_type}: {deck_drawn_card.name}")
-                                # In the future, this would lead to equipping/using the card
                         else:
                             print("Deck is empty!")
                             deck_drawn_card = Card("Empty", "message", name="Deck Empty!")
                 
                 # --- Combat End Interaction Clicks (only to dismiss messages) ---
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_COMBAT_END_VICTORY:
-                    # After "Victory!" fades, any tap leads to drawing a new card or a reward screen
                     if not battle_manager.combat_text_active: # Only allow click if animation finished
                         current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Back to idle to draw next card
                         deck_drawn_card = None # Clear the defeated enemy card
@@ -449,7 +462,6 @@ while running:
                         print("Combat ended. Ready to draw next card.")
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_COMBAT_END_DEFEAT:
-                    # After "Defeat!" fades, any tap leads to game over/title screen
                     if not battle_manager.combat_text_active: # Only allow click if animation finished
                         print(f"Game Over. Returning to title screen. This Game's Seed was: {game_session_seed}") # Modified line
                         current_game_state = GAME_STATE_TITLE
@@ -463,9 +475,7 @@ while running:
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_START: # This is the state where "Treasure!" has animated
                     print("NEXT_TURN_EVENT triggered for EQUIPMENT_FOUND state. Transitioning to applying buffs.")
-                    # This call handles applying buffs and setting subsequent pop-ups
                     current_game_room_sub_state = inventory_manager.handle_player_buff(hero) 
-                    # After applying buffs, set a short timer for a visual delay before IDLE
                     pygame.time.set_timer(NEXT_TURN_EVENT, 2000)
 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_START:
@@ -474,7 +484,6 @@ while running:
                     pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Give time for boost pop-ups
                 
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
-                    # Allow click to dismiss the "Equipment Added" state and go back to IDLE
                     print("Equipment Added. Ready to draw next card.")
                     current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
                     pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Stop any lingering timers for this state
@@ -486,11 +495,9 @@ while running:
                     pygame.time.set_timer(NEXT_TURN_EVENT, 0) # Turn off timer
                         
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_DUNGEON_EXIT_ANIMATION:
-                    # After "You Survived!" fades, any tap leads to reward screen
                     if not battle_manager.combat_text_active: # Only allow click if animation finished
                         current_game_room_sub_state = GAME_ROOM_SUB_STATE_REWARD_SCREEN
                 elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_REWARD_SCREEN:
-                    # Second tap after reward screen leads to title screen
                     print("Returning to title screen from reward.")
                     current_game_state = GAME_STATE_TITLE
                     hero = None # Reset hero
@@ -516,7 +523,7 @@ while running:
                         pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Enemy turn auto-triggers after 1 sec
                 else:
                     print("Error: Player or enemy missing during player turn.")
-                    current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Fallback to idle
+                    current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE 
 
             elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_ENEMY_TURN:
                 if hero and battle_manager.current_enemy: # Ensure both exist before attacking
@@ -524,28 +531,24 @@ while running:
                     current_game_room_sub_state = new_sub_state
 
                     if new_sub_state == GAME_ROOM_SUB_STATE_PLAYER_TURN:
-                        pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # Player turn auto-triggers after 1 sec
+                        pygame.time.set_timer(NEXT_TURN_EVENT, 2000) 
                 else:
                     print("Error: Player or enemy missing during enemy turn.")
-                    current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE # Fallback to idle
+                    current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE 
             
             elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_START:
                 print("NEXT_TURN_EVENT triggered for EQUIPMENT_START state. Transitioning to applying buffs.")
-                # Now that the "Treasure!" animation time has passed, apply the buffs
-                current_game_room_sub_state = inventory_manager.handle_player_buff(hero) # This method should return GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED
-                # After applying buffs, set a short timer to transition to IDLE after the buff numbers animate
-                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # 1 second for buff number animation
+                current_game_room_sub_state = inventory_manager.handle_player_buff(hero)
+                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) 
 
             elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED:
                 print("NEXT_TURN_EVENT triggered for EQUIPMENT_ADDED state. Returning to IDLE.")
-                # Buff animation is done, go back to IDLE
                 current_game_room_sub_state = GAME_ROOM_SUB_STATE_IDLE
 
             elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_START:
                 print("NEXT_TURN_EVENT triggered for LEVEL_UP_START state. Transitioning to applying buffs.")
-                current_game_room_sub_state = level_manager.handle_level_up(hero) # This method should return GAME_ROOM_SUB_STATE_EQUIPMENT_ADDED
-                # After applying buffs, set a short timer to transition to IDLE after the buff numbers animate
-                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) # 1 second for buff number animation
+                current_game_room_sub_state = level_manager.handle_level_up(hero) 
+                pygame.time.set_timer(NEXT_TURN_EVENT, 2000) 
 
             elif current_game_room_sub_state == GAME_ROOM_SUB_STATE_LEVEL_UP_ADDED:
                 print("NEXT_TURN_EVENT triggered for LEVEL_UP_ADDED state. Returning to IDLE.")
@@ -624,8 +627,6 @@ while running:
         # Update and draw combat animations (text, damage numbers)
         new_sub_state_after_anim = battle_manager.update_animations(current_game_room_sub_state)
         
-        # If the sub-state just transitioned to PLAYER_TURN after the combat start animation,
-        # immediately set the timer for the player's first auto-attack.
         if new_sub_state_after_anim == GAME_ROOM_SUB_STATE_PLAYER_TURN and current_game_room_sub_state != GAME_ROOM_SUB_STATE_PLAYER_TURN:
             pygame.time.set_timer(NEXT_TURN_EVENT, 1000) # Player's first turn delay
         
